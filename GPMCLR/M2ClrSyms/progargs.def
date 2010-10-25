@@ -1,0 +1,86 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+(* !SYSTEM! *) DEFINITION MODULE ProgArgs;
+
+(* this is a system module; it is known to the compiler and  *)
+(* activated by import. There is no explicit implementation. *)
+
+  PROCEDURE ArgNumber() : CARDINAL;
+  (* postcondition : returns number of arguments with UNIX   *)
+  (*                 conventions. Returns 1 if no args given *)
+
+  PROCEDURE GetArg(num : CARDINAL; VAR arg : ARRAY OF CHAR);
+  (* precondition  : 0 <= num <= ArgNumber() - 1             *)
+  (* postcondition : arg is a nul terminated string. ( ==>   *)
+  (*                 it is fast even if HIGH(arg) >> length) *)
+
+  (* usage example: to simply print all the arguments --
+
+       FOR ix := 0 TO ArgNumber() - 1 DO
+         GetArg(ix,str); WriteString(str); WriteLn;
+       END;
+  *)
+
+  PROCEDURE EnvironString(inStr  : ARRAY OF CHAR;
+                      VAR outStr : ARRAY OF CHAR);
+  (* precondition  : HIGH(outStr) must be > than length of   *)
+  (*                 outString ... no checking is done.      *)
+  (* postcondition : outStr holds value of environ variable, *)
+  (*                 or an empty string if inStr not defined *)
+
+  PROCEDURE VersionTime(VAR outStr : ARRAY OF CHAR);
+  (* precondition  : HIGH(outStr) > 26                       *)
+  (* postcondition : outStr is a nul terminated string with  *)
+  (*                 the date and time at which the program  *)
+  (*                 was built. The string includes newline  *)
+
+  (* usage example: to print version time --
+   *
+   *   WriteString("Program version of ");
+   *   VersionTime(str);
+   *   WriteString(str); (* no WriteLn needed *)
+   *)
+
+  PROCEDURE UNIXtime() : CARDINAL;
+  (* returns time in seconds since 00:00:00, GMT Jan 1 1970 *)
+
+  PROCEDURE GetMillis() : CARDINAL;
+  (* returns milliseconds since some arbitrary origin       *)
+
+  PROCEDURE UNIXexit(res : CARDINAL);
+  (* exits program returning result code res to UNIX caller *)
+
+  PROCEDURE Assert(expr : BOOLEAN;
+		   optString : ARRAY OF CHAR);
+  (* If expr is FALSE, the program aborts with the message  *)
+  (* optString.  The open array is optional, and if used    *)
+  (* replaces the module name message which is otherwise    *)
+  (* generated                                              *)
+  (* From the command line "gpm -a" suppresses assert tests *)
+
+  VAR FP_Overflow : BOOLEAN;
+  (*
+   * This flag is set by the appropriate signal handler and remains
+   * set unless explicitly cleared by the application.
+   * The gpm front-end uses it to handle infinity on Alpha's
+   * (On most machines the result of an FP overflow is +infinity
+   *  On ALPHA it's UNPREDICTABLE.)
+   * Typical usage:-
+   *		FP_Overflow := FALSE;
+   *    	 ... some floating-point calculations
+   *		IF (FP_Overflow) THEN
+   *		 ... floating-point overflow occurred
+   *		END;
+   *)
+END ProgArgs.

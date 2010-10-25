@@ -1,0 +1,64 @@
+
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*                 Runtime System Interface			*)
+(*                                                              *)
+(*     (c) copyright 1990 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg January 1990                      *)
+(*      modifications   : kjg Sep-90 IBM-PC version of m2rts    *)
+(*                      : dwc Jan-91 strLen added               *)
+(*                      : dwc Feb-91 RTSCalls and rts array     *)
+(*                      :            added as lookup table for  *)
+(*                      :            PC object code version     *)
+(****************************************************************
+$Log: m2rtsint.def,v $
+Revision 1.3  1997/01/16 04:57:16  gough
+new trap name m2_preTrp
+
+Revision 1.2  1996/11/27 02:46:59  lederman
+remove 'rts' array
+
+Revision 1.1  1994/04/07 05:15:19  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2RTSInterface;
+
+  FROM M2Alphabets IMPORT HashBucketType;
+
+  (* ================================================== *)
+
+  VAR
+	m2_funTrp, 	(* no parameters 		*)
+	m2_modTrp,	(* no parameters 		*)
+	m2_assTrp, 	(* nam : ChrPtr; lin : CARDINAL *)
+	m2_preTrp, 	(* nam : ChrPtr; lin : CARDINAL *)
+	m2_casTrp, 	(* badSelect : CARDINAL 	*)
+	m2_rTrpLI, 	(* val : INTEGER; min : INTEGER *)
+	m2_rTrpHU,	(* val, upperBnd : CARDINAL	*)
+	m2_rTrpLHI,	(* val, min, max : INTEGER 	*)
+	m2_rTrpLHU, 	(* val, min, max : CARDINAL	*)
+	m2_iTrpLHI,	(* index, min, max : INTEGER 	*)
+	m2_iTrpLHU, 	(* index, min, max : CARDINAL	*)
+        eVec,fVec,		(* RTS bitvector arrays *)
+	equ, neq, geq, leq,	(* RTS big set compares *)
+	clr,setRngIncl,		(* RTS big set operates *)
+	cap2,cap3,
+	cup2,cup3,
+	xor2,xor3,
+	dif2,dif3,
+	exitTrp, 	(* resultVal : CARDINAL 	*)
+	abortTrp, 	(* no parameters		*)
+	timeTrp, 	(* () : CARDINAL ??? 		*)
+        strLen
+		: HashBucketType;
+
+  PROCEDURE InitTable;
+  (* call at initialization time to set trap hash buckets *)
+
+END M2RTSInterface.
+

@@ -1,0 +1,184 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*             Definition of Machine Constants                  *)
+(*								*)
+(*     (c) copyright 1988 Faculty of Information Technology     *) 
+(*								*) 
+(*      original module : kjg March 1988                        *) 
+(*      modifications   : 32 bit constants            02-Dec-88 *) 
+(*                      : executable file size limits 03-Oct-89 *) 
+(*			: new filename length consts  30-Mar-90 *) 
+(*			: new constant alignMap	       8-Sep-90 *)
+(*								*)
+(****************************************************************)
+(*								*)
+(*	      THIS IS THE GENERIC VERSION FOR GP2D		*)
+(*								*)
+(****************************************************************
+$Log: m2machin.def,v $
+Revision 1.11  1997/01/16 03:55:30  gough
+        new consts refVersion, symVersion, minVersion.
+        new variables defDensity, optDensity.
+
+Revision 1.10  1996/11/27 02:00:33  lederman
+add exceptOK var
+
+Revision 1.9  1996/07/29 23:56:02  gough
+extra rts param position oP5 for __SSCATST__
+
+Revision 1.8  1996/01/08 05:22:19  gough
+new limit 1024 for set cardinality
+
+Revision 1.7  1995/10/18 00:45:15  lederman
+added INFINITY
+
+Revision 1.6  1995/10/10 23:24:56  lederman
+gdbXCOFF flag added
+
+# Revision 1.5  1995/01/06  03:35:18  gough
+# remove export of jumpTabElSize
+#
+# Revision 1.4  1994/11/15  04:29:59  gough
+# put in gdb support keyed on config tag "gdbStabs"
+#
+# Revision 1.3  1994/10/10  05:11:24  gough
+# install new Boolean sunStructs to signal callee copy value structures
+#
+# Revision 1.2  1994/07/01  04:44:37  lederman
+# all wordSize dependant constants now vars
+# versionNumber moved here - set to 2 for 32-bit ref files, 3 for 64-bit files
+#
+# Revision 1.1  1994/04/07  05:00:51  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2MachineConstants;
+    IMPORT Types;
+
+    CONST nilValue    = NIL;
+
+	 (*
+	  *  For .rfx files, the version number is "refVersion".
+	  *  For .syx files, the version number  is:
+	  *	(refVersion + 
+	  *      IF extensions THEN 1 ELSE 0 END)
+	  *  but version 2 is backward compatible.
+	  *)
+	  refVersion = 3;
+	  symVersion = 4;
+	  minVersion = 2;
+
+          maxSetCard  = 1023;
+          charMax     = 255;
+
+          byteSize    = 1;
+
+          bytesInReal = 8;	(* can assume IEEE floating point *)
+          floatSize   = 4;
+          doubleSize  = 8;
+
+(* ============================================================== *)
+    VAR   defDensity  : INTEGER;      (* case statement density   *)
+	  optDensity  : INTEGER;      (* -O2 case stat. density   *)
+
+    VAR   bitsInWord  : Types.Card8;  (* 64-bit mods jl - June 94 *)
+          bytesInWord : Types.Card8;  (* all previously constants *)
+          wordSize    : Types.Card8;
+          adrSize     : Types.Card8;
+          intMax      : CARDINAL;
+          cardMax     : CARDINAL;
+	  INFINITY    : REAL;	(* Could be encoded as CONST 1.0/0.0 *)
+
+    TYPE  AlignMap = ARRAY [1 .. 8] OF CHAR;
+	  ParamMap = ARRAY [0C .. 7C] OF CHAR;
+
+    VAR   alignMap : AlignMap;  (* this is the TARGET align map *)
+	  paramMap : ParamMap;  (* this is the TARGET align map *)
+
+    (* this is the HOST endian attribute *)
+    VAR   bigEndian   : BOOLEAN;
+                        (* FALSE ==> littleEndian like VAX etc. *)
+                        (* TRUE  ==> bigEndian like M68k etc.   *)
+
+    VAR   crossEndian : BOOLEAN; 
+    (* ==> host and target are different *)
+
+    VAR   stackInverted : BOOLEAN;
+    (* ==> stack grows downward in address space *)
+
+    VAR   parsFixed   : BOOLEAN;
+    (* ==> params are at fixed location, not pushed *)
+    VAR   refRecords  : BOOLEAN;
+    (* ==> value records are copied in the callee   *)
+
+    VAR   expandTests : BOOLEAN;
+    (* ==> tests are expanded in the intermediate code *)
+
+    VAR   extRecRetPtr : BOOLEAN;
+    (* ==> functions returning records use special dest ptr *)
+    (* default is FALSE, but must be TRUE to mathch SPARC C *)
+
+    VAR   extArrRetPtr : BOOLEAN;
+    (* ==> functions returning arrays use special dest ptr  *)
+    (* default is FALSE, even for SPARC compatible versons  *)
+
+    VAR   sunStructs   : BOOLEAN;
+    (* ==> value records will be copied in the _caller_     *)
+    (* this is a SUN Microsystems idiom, used for SPARC     *)
+
+    VAR   gdbSupport   : BOOLEAN;
+    VAR   gdbXCOFF     : BOOLEAN;	(* both TRUE if gdbStabX *)
+
+    VAR   exceptOK     : BOOLEAN;	(* dgen understands .EXCEPT *)
+
+    VAR   stackMarkSize  : Types.Card8;  
+	  destOffset     : Types.Int8;  (* neg for stackUpright *)
+    VAR   displayElSize  : Types.Card8;
+	  oP1, oP2, oP3, oP4, oP5 : INTEGER; (* offsets of m2rts pars *)
+
+    PROCEDURE InitMachineVariables;
+    PROCEDURE InitForCLR;
+
+(* ============================================================== *)
+
+    CONST jmpBufSiz   = 83;      (* MIPS, 83 * sizeof(int) bytes  *)
+          linkNameLength = 31;   (* maximum length of link names  *)
+          lnkSuffixLngth = 10;   (* module suffix in link names   *)
+          fileNameLength = 79;   (* characters before the "."     *)
+          oldFileNameLength = 8; (* characters before the "."     *)
+
+    CONST
+      sizeLimit = 2147483647 - 90000;
+			(* The C compiler rejects array sizes greater than
+			   2**31-1 as negative. Sizes close to this limit
+			   cause the loader to fail. Experiment shows that
+			   a 'slop' of 90000 is required - 85000 is not
+			   enough.
+			   It should be noted that this still allows 2Gb
+			   arrays, which cause 2Gb executable files!
+			*)
+      largeArray = 16777216;
+			(* As noted above, huge executable files may result
+			   from 'valid' array declarations. To warn of
+			   infeasible arrays, this threshold is used for a
+			   warning message.
+			*)
+
+END M2MachineConstants.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

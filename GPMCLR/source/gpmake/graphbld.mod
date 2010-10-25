@@ -1,0 +1,531 @@
+(*
+ * =========== macro processed output from MPP  ==========
+ *
+ * input file  : graphbld.mpp
+ * time stamp  : 2004:01:08::10:26:52
+ *
+ * output file : graphbld.mod
+ * created at  : 2004:01:12::14:21:43
+ *
+ * options ... :  /Ddotnet86
+ *
+ * =======================================================
+ *)
+
+(* -- RCS header --
+	$Log:	graphbui.mpp,v $
+Revision 1.6  93/11/30  15:33:50  mboss
+*** empty log message ***
+
+Revision 1.5  93/11/30  15:26:41  mboss
+Call to Terminal should have been ErrOutput
+
+Revision 1.4  93/11/24  15:40:55  mboss
+*** empty log message ***
+
+Revision 1.3  93/11/22  15:27:29  mboss
+Added trap for excessive recursive calls to GraphDFS, in effort to
+catch circular import of definition modules.
+
+Revision 1.2  93/11/03  08:59:33  mboss
+Added DEC Alpha changes
+
+Revision 1.1  93/03/25  14:31:38  mboss
+Initial revision
+
+*)
+(* 
+ *  extracted with 
+ * 	    "opsys" == "windows"
+ * 	   "endian" == "little"
+ *	"processor" == "iap386"
+ *)
+
+(****************************************************************)
+(*                                                              *)
+(*                Modula-2 Compiler Source Module               *)
+(*                                                              *)
+(*                The Make Facility - PC Version                *)
+(*                 Calls Graph Builder Program                  *)
+(*                                                              *)
+(*     This program is used by the gpmake driver program.       *)
+(*                                                              *)
+(*        original module : dwc October 1991                    *)
+(*        modifications   : kjg Mar 92, UNIX version		*) 
+(*			    kjg Mar 92  write "now" to file	*)
+(*			    jrh Apr 92  path strings 256 char	*)
+(*					check EnvironString	*)
+(*			    jrh Apr 92  Summary if gpm -V	*)
+(*			    jrh Apr 92  message if no DEF/IMP	*)
+(*			    jrh Jun 92  check for no gpm args	*)
+(*                      : kjg 03-Aug-92 uses new GpFiles procs  *)
+(*                      : pms 22-Nov-93 Added check for excess  *)
+(*                                      recursive calls to      *)
+(*                                      GraphDFS                *)
+(*                                                              *)
+(****************************************************************)
+
+
+
+
+MODULE GraphBld;
+
+IMPORT StdError;
+IMPORT InOut;
+
+FROM SYSTEM IMPORT CAST, BYTE;
+FROM Ascii IMPORT nul;
+FROM Storage IMPORT ALLOCATE;
+FROM GenSequenceSupport IMPORT 
+	Sequence, ElemPtr, InitCursor, InitSequence, LengthOf,
+	GetNext, GetFirst, Ended, LinkLeft, LinkRight, NextIsLast;
+FROM MkAlphabets IMPORT 
+	TermSymbols, HashBucketType, SymbolSet, FileNameType;
+FROM MkInOut IMPORT 
+	middleMax,
+	MiddleString, FileNameString,
+	OpenInput, OpenDefOrModFile, CloseDefOrModFile, 
+	DiagName, CreateMakFile, CloseMakFile, WriteMakString, 
+	WriteMb, WriteMakKey, WriteStringToTempFile, 
+	OpenSymFile, CloseSymFile, AbortMessage;
+FROM MkScanner IMPORT 
+	InitScanner, symbol, lexAtt, GetSymbol,
+	InitSymScan, symSmbl, GetSymSmbl;
+FROM MkNameHandler IMPORT 
+	sysBkt, foreignBkt, directBkt,
+	GetSourceRep, MakeFileName,
+	FindFileName,
+	Summary;
+FROM ProgArgs IMPORT Assert, UNIXexit,
+	UNIXtime, GetArg;
+FROM UxFiles IMPORT Create, WriteByte, Open, Close, File, OpenMode;
+
+CONST
+  afterImports = SymbolSet{varSy, endSy, constSy, typeSy, procedureSy,
+                           eofSy, beginSy, moduleSy};
+  importDecs = SymbolSet{importSy, fromSy};  
+
+TYPE
+  ModRecPtr = POINTER TO ModRec;
+  ModRec = RECORD
+             name    : HashBucketType;
+             imports : Sequence;
+	     magic   : CARDINAL;
+             class   : FileNameType;
+	     done    : BOOLEAN;
+           END;
+
+VAR
+  toDoList : Sequence;
+  modRec, current, dummy : ModRecPtr;
+  prevCurs, modCurs : ElemPtr;
+  filName, makName, gpmOpts : FileNameString;
+  index : CARDINAL;
+  baseHash : HashBucketType;
+  baseName : FileNameString;	(* see note in gpmake *)
+  numRecursiveCalls : CARDINAL;  (* number of recursive calls to GraphDFS *)
+
+
+(* ======================================================================== *)
+
+PROCEDURE CreateModRec(VAR mod : ModRecPtr;
+			   nam : HashBucketType;
+			   cls : FileNameType);
+BEGIN
+  NEW(mod);
+  WITH mod^ DO
+    name := nam;
+    InitSequence (imports);
+    class := cls;
+    magic := 0;
+    done := FALSE;
+  END;
+END CreateModRec;
+
+PROCEDURE OutputModule (VAR module : ModRecPtr);
+VAR
+  moduleName : ARRAY [0..127] OF CHAR;
+  index : CARDINAL;
+BEGIN
+  IF NOT module^.done THEN
+    IF module^.class = def THEN
+      WriteMb(definitionSy);
+    ELSIF module^.class = mod THEN
+      WriteMb(moduleSy);
+    ELSE WriteMb(fromSy);
+    END;
+    WriteMb(ident);
+    index := 0;
+    GetSourceRep(module^.name,moduleName,index);
+    WriteMakString(moduleName);
+
+(*
+ *  ErrOutput.WriteString("enter module ");
+ *  ErrOutput.WriteString(moduleName);
+ *  IF module^.class = def THEN
+ *    ErrOutput.WriteString(" def");
+ *  ELSIF module^.class = mod THEN
+ *    ErrOutput.WriteString(" mod");
+ *  ELSE 
+ *    ErrOutput.WriteString(" syx ");
+ *    ErrOutput.WriteCard(module^.magic,0);
+ *  END;
+ *  ErrOutput.WriteLn();
+ *)
+
+    IF module^.class = syx THEN
+     (* ======================================= *
+      *  Library modules are never recompiled
+      *  Therefore fetch the magic number while 
+      *  the file is open, and store the value
+      *  for the consistency checks of Decider
+      * ======================================= *)
+      WriteMb(fixNum);
+    ELSE
+      WriteMb(exceptSy);
+    END;
+    WriteMakKey(module^.magic);
+    module^.done := TRUE;
+  END;
+END OutputModule;
+
+PROCEDURE SearchKnownList (modName : HashBucketType; 
+			 VAR found : BOOLEAN;
+                	 VAR item  : ModRecPtr);
+VAR
+  curs : ElemPtr;
+BEGIN
+  found := FALSE;
+  InitCursor(toDoList,curs);
+  WHILE (NOT found AND NOT Ended(curs)) DO
+    GetNext(curs,item);
+    found := (modName = item^.name) AND 
+		((item^.class = def) OR 
+		 (item^.class = syx));
+  END;
+END SearchKnownList; 
+
+PROCEDURE UpdateGraph (defName : HashBucketType; current : ModRecPtr);
+VAR
+  defRec, modRec : ModRecPtr;
+  symName  : MiddleString;
+  nameArr  : FileNameString;
+  found    : BOOLEAN;
+  i        : CARDINAL;
+   
+  PROCEDURE GetMagicOfSym(VAR key : CARDINAL);
+  BEGIN
+    InitSymScan();
+    (*
+     *   format is ... { lBrac ... rBrac } ... keySy ...
+     *)
+    WHILE symSmbl <> keySy DO
+      REPEAT GetSymSmbl();
+      UNTIL (symSmbl = lBrac) OR (symSmbl = keySy);
+      IF symSmbl = lBrac THEN
+        REPEAT GetSymSmbl() UNTIL symSmbl = rBrac;
+      END;
+    END; (* while *)
+    key := lexAtt.fixValue;
+  END GetMagicOfSym;
+
+BEGIN
+  (* =================================================== * 
+   *
+   *  SYSTEM is special, and does not have a .syx file
+   *  so return immediately if import is SYSTEM
+   *)
+  IF defName = sysBkt THEN RETURN END;
+  (* =================================================== *)
+  SearchKnownList(defName,found,defRec);
+  IF NOT found THEN  
+   (*  ============================ *
+    *    This is a module which
+    *    was previously unknown 
+    *  ============================ *)
+    FindFileName(defName,def,nameArr,found);
+    CreateModRec(defRec,defName,def);
+    WITH defRec^ DO
+      IF NOT found THEN
+        (*  ============================ *
+	 *    def not found locally. 
+	 *    Look for library .syx 
+	 *  ============================ *)
+	OpenSymFile(defName,symName,found);
+        IF NOT found THEN (* error: symbol file not found *)
+          StdError.WriteString(
+              "#gpmake: Can't find definition or symbol file for: ");
+	  DiagName(defName);
+          StdError.WriteLn();
+	  UNIXexit(1);
+        END;
+	class := syx;
+	GetMagicOfSym(magic);
+        (*  ============================ *
+	 *  link behind the to-do cursor
+	 *  ============================ *)
+        LinkLeft(toDoList,defRec);
+        CloseSymFile;
+        (*  ============================ *
+	 *   But this module might still
+	 *   have a local implementation
+	 *  ============================ *)
+        FindFileName(defName,mod,nameArr,found);
+	IF found THEN (* local mod *)
+	  CreateModRec(modRec,defName,mod);
+	  LinkRight(toDoList,modRec);
+	END;
+      ELSE (* ========================== *
+	 *    def was found locally. 
+	 *  ============================ *)
+        LinkRight(toDoList,defRec);
+      END; (* if *)
+    END; (* with defRec^ *)
+  END;  (* if not found on list *)
+  LinkRight (current^.imports,defRec); (* must link even if known *)
+END UpdateGraph;
+
+(*
+ *  PROCEDURE UPD(nam : HashBucketType; module : ModRecPtr);
+ *  VAR
+ *    moduleName : ARRAY [0..127] OF CHAR;
+ *    index : CARDINAL;
+ *  BEGIN
+ *      index := 0;
+ *      ErrOutput.WriteString("appending "); 
+ *      GetSourceRep(nam,moduleName,index);
+ *      ErrOutput.WriteString(moduleName); 
+ *  
+ *      index := 0;
+ *      ErrOutput.WriteString(" to "); 
+ *      GetSourceRep(module^.name,moduleName,index);
+ *      ErrOutput.WriteString(moduleName); 
+ *  
+ *      ErrOutput.WriteLn();
+ *  END UPD;
+ *  
+ *  PROCEDURE WNM(module : ModRecPtr);
+ *  VAR
+ *    moduleName : ARRAY [0..127] OF CHAR;
+ *    index : CARDINAL;
+ *    curs : ElemPtr;
+ *    item : ModRecPtr;
+ *  BEGIN
+ *    index := 0;
+ *    GetSourceRep(module^.name,moduleName,index);
+ *    InitCursor(current^.imports,curs);
+ *    WHILE NOT Ended(curs) DO
+ *      GetNext(curs,item);
+ *      GetSourceRep(item^.name,moduleName,index);
+ *    END;
+ *    ErrOutput.WriteString(moduleName); 
+ *    ErrOutput.WriteCard(LengthOf(current^.imports),3); 
+ *    ErrOutput.WriteLn();
+ *  END WNM;
+ *)
+
+PROCEDURE GraphDFS (current : ModRecPtr);
+(*
+ *  depth first search on imports graph
+ *)
+   PROCEDURE Continue () : BOOLEAN;
+   CONST
+     warnStr = "**** GPMake Warning";
+     messStr = "**** Possible Circular Import of Definition Module ****";
+     contStr = "**** Continuation may result in a Stack/Segment Violation ****";
+     promptStr  = "**** Continue? y/n : ";
+   (*
+    * Temporarily halts recursive calls to
+    * Stack/Segmentation violation due to circular imports of def
+    * modules.  User is prompted as to whether to continue or not.
+    * Program aborts if continuation not selected.
+    *)
+   VAR
+      reply : CHAR;
+   BEGIN
+      StdError.WriteString (warnStr);  StdError.WriteLn;
+      StdError.WriteString (messStr);  StdError.WriteLn;
+      StdError.WriteString (contStr);  StdError.WriteLn;
+      StdError.WriteString (promptStr);
+      LOOP
+         InOut.Read(reply);
+         IF (reply = "Y") OR (reply = "y") THEN RETURN (TRUE) END;
+         IF (reply = "N") OR (reply = "n") THEN RETURN (FALSE) END;
+      END;
+   END Continue;
+
+VAR
+  curs : ElemPtr;
+  item : ModRecPtr;
+BEGIN
+  IF (numRecursiveCalls = 1000) AND (NOT Continue()) THEN
+     Assert (FALSE, "Program aborted at user's request");
+  END;
+  InitCursor(current^.imports,curs);
+  WHILE NOT Ended(curs) DO
+    GetNext(curs,item);
+    IF NOT item^.done THEN
+      INC (numRecursiveCalls);  (* Keep track of recrsive calls *)
+      GraphDFS(item);
+    END;
+  END;
+  OutputModule(current);
+END GraphDFS;
+
+PROCEDURE SkipTo (haltSet : SymbolSet);
+BEGIN
+  WHILE NOT (symbol IN haltSet) DO
+    GetSymbol;
+  END;
+END SkipTo;
+
+PROCEDURE ProcessImportStatement;
+BEGIN
+  CASE symbol OF
+  | fromSy   : GetSymbol;  
+               IF symbol <> ident THEN 
+		 WriteStringToTempFile("invalid source file format");
+                 UNIXexit(1);
+               ELSE UpdateGraph (lexAtt.hashIx,current); END;
+               GetSymbol;  (* skip IMPORT  *)
+               GetSymbol;
+  | importSy : GetSymbol;
+               IF symbol = implementationSy THEN
+                 GetSymbol; (* FROM *)
+		 GetSymbol;
+                 IF symbol <> litstring THEN 
+		   WriteStringToTempFile("invalid source file format");
+	           UNIXexit(1);
+                 END;
+               ELSIF symbol = ident THEN
+                 UpdateGraph (lexAtt.hashIx,current); GetSymbol;
+	         WHILE symbol = comma DO (* multi entries Dec-91 kjg *)
+		   GetSymbol; (* get past comma *)
+		   IF symbol = ident THEN
+		     UpdateGraph (lexAtt.hashIx,current); GetSymbol;
+		   END;
+		 END; (* while *)
+               ELSE 
+		 WriteStringToTempFile("invalid source file format");
+	         UNIXexit(1);
+               END;
+  END;  (* case *)
+END ProcessImportStatement;
+    
+  VAR now  : CARDINAL;	(* UNIXtime *)
+
+BEGIN  (* main  *)
+  now := UNIXtime();
+  InitSequence (toDoList);
+  OpenInput;
+  InitScanner; 
+  IF symbol <> moduleSy THEN 
+    WriteStringToTempFile("not a base module");
+    UNIXexit(1); 
+  END;
+  GetSymbol;
+  baseHash := lexAtt.hashIx;
+  index := 0;
+  GetSourceRep(baseHash,baseName,index);
+  (*  ======================================= *
+   *   create graph node for the base module
+   *  ======================================= *)
+  CreateModRec(modRec,baseHash,mod);
+  LinkRight(toDoList,modRec);
+  InitCursor(toDoList,modCurs); 
+  prevCurs := modCurs;
+  GetNext(modCurs,current);
+  LOOP  (* while still modules on to-do list *)
+    SkipTo(importDecs+afterImports);
+    WHILE NOT (symbol IN afterImports) DO 
+      ProcessImportStatement;
+      SkipTo(importDecs+afterImports);
+    END; (* while *)
+    CloseDefOrModFile;
+    IF NextIsLast(prevCurs) THEN EXIT; 
+    ELSE
+      modCurs := prevCurs;
+      GetNext(modCurs,dummy);
+      prevCurs := modCurs;
+      GetNext(modCurs,current);
+    END;
+    IF current^.class = def THEN
+      MakeFileName(current^.name,def,filName);
+    ELSIF current^.class = mod THEN
+      MakeFileName(current^.name,mod,filName);
+    ELSE Assert(FALSE,"symbol file on to-do list");
+    END;
+    (*
+     *   scan the source file of the next file
+     *   on the module to-do list ...
+     *)
+    OpenDefOrModFile(filName);
+    InitScanner;
+    IF (symbol = ident) AND ((lexAtt.hashIx = foreignBkt) OR
+       (lexAtt.hashIx = directBkt)) THEN
+      StdError.WriteString ("Foreign implementation of <");
+      DiagName(current^.name);
+      StdError.WriteString ("> may need recompilation.");
+      StdError.WriteLn;
+    ELSIF current^.class = def THEN
+      (*
+       *  If this is a definition module, then
+       *  it is necessary to create a node for 
+       *  the implementation module also. At the
+       *  least this .mod imports its own .def
+       *)
+      CreateModRec(modRec,current^.name,mod);
+      LinkRight(toDoList,modRec);
+    END;
+    SkipTo(SymbolSet{implementationSy,definitionSy,eofSy});
+    IF symbol = eofSy THEN
+      StdError.WriteString(
+                '#gpmake: "DEFINITION" or "IMPLEMENTATION" not found');
+      StdError.WriteString(" in file ");
+      StdError.WriteString(filName);
+      StdError.WriteLn();
+      UNIXexit(1);
+    END;
+    GetSymbol;  (* skip MODULE *)
+    GetSymbol;
+    IF lexAtt.hashIx <> current^.name THEN
+      StdError.WriteString("#gpmake: searching for <");
+      DiagName(current^.name);
+      StdError.WriteString(">, found <");
+      DiagName(lexAtt.hashIx);
+      StdError.WriteString("> in file ");
+      StdError.WriteString(filName);
+      StdError.WriteLn();
+      UNIXexit(1);
+    END;
+  END; (* loop *)
+  (* Graph Built  *)
+  MakeFileName(baseHash,mak,makName);
+  CreateMakFile(makName);	(* decider says mixed case ok now *)
+  WriteMb(beginSy);
+  WriteMb(ident);
+  WriteMakString(baseName);
+  (* write out the time "now" *)
+  WriteMb(fixNum);
+  WriteMakKey(now);  (* WriteMakKey == WriteCardinal *)
+  InitCursor(toDoList,modCurs);
+  WHILE NOT Ended(modCurs) DO
+    GetNext(modCurs,current);
+    IF current^.class = mod THEN
+      numRecursiveCalls := 1;    (* start recursive calls count *)
+      GraphDFS(current);
+    END;
+  END;
+  WriteMb(endSy);
+  CloseMakFile;
+  WriteStringToTempFile(makName);
+
+  GetArg(1,gpmOpts);
+  index := 0;
+  LOOP
+    IF gpmOpts[index] = nul THEN EXIT; END;
+    IF gpmOpts[index] = '+' THEN Summary(); EXIT; END;
+    INC(index);
+  END;
+  UNIXexit(0);
+END GraphBld.

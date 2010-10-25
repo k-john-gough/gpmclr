@@ -1,0 +1,37 @@
+
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+INTERFACE DEFINITION MODULE FREXP;
+
+(* ************************************************************* *)
+(*                                                               *)
+(* Interface to the standard C functions which manipulate REALs  *)
+(* there is no need to specify that the implementation is in -lc *)
+(*                                                               *)
+(* ************************************************************* *)
+
+  FROM Types IMPORT Int32;
+  (*  Required for exponents of Real Numbers, as 64 bit exponents not
+      allowed on DEC Alpha *)
+
+  PROCEDURE frexp(val : REAL; VAR exp : Int32) : REAL;
+  (* returns the mantissa, and the exponent in exp *)
+
+  PROCEDURE ldexp(val : REAL; exp : Int32) : REAL;
+  (* returns val * 2^exp *)
+
+  PROCEDURE modf(val : REAL; VAR iPart : REAL) : REAL;
+  (* returns signed fraction part, and integer part in iPart *)
+
+END FREXP.

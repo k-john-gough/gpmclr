@@ -1,0 +1,118 @@
+(*
+ * =========== macro processed output from MPP  ==========
+ *
+ * input file  : mkscanne.dpp
+ * time stamp  : 1997:01:14::10:47:44
+ *
+ * output file : mkscanne.def
+ * created at  : 2004:01:12::14:17:55
+ *
+ * options ... :  /Ddotnet86
+ *
+ * =======================================================
+ *)
+
+(* -- RCS header --
+	$Log:	mkscanne.dpp,v $
+Revision 1.1  93/03/25  14:32:26  mboss
+Initial revision
+
+*)
+
+(* 
+ *  extracted with 
+ * 	    "opsys" == "windows"
+ * 	   "endian" == "little"
+ *	"processor" == "iap386"
+ *)
+
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*		  Lexical Scanner for Compiler			*)
+(*	  Nested modules contain string and hash tables.	*)
+(*								*)
+(*           (c) copyright 1987 SoftWare Automata.              *)
+(*                                                              *)
+(*      original module : kjg july 1987                         *)
+(*      modifications   :                                       *)
+(*								*)
+(*               CUT DOWN VERSION FOR PC GPMAKE                 *)
+(*                     dwc September 1991                       *)
+(*                                                              *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE MkScanner;
+
+FROM MkAlphabets IMPORT TermSymbols, LexAttType;
+
+
+VAR     symbol : TermSymbols;     (* symbol from input file *)
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+        symSmbl : TermSymbols;    (* symbol from symbol file *)
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+        makSmbl : TermSymbols;    (* symbol from make file *)
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+VAR     lexAtt : LexAttType;
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+PROCEDURE GetSymbol;
+(* precondition  : there is an attached input stream which
+                   has been initialized by InitScanner;
+   postcondition : the variable symbol holds the next symbol.
+                   The attribute variable lexAtt holds any value.
+                   If the symbol is an identifier, then .hashIx
+                   holds the current hash table index for the id.
+                   If the symbol is a numeric literal, then
+                   .fixValue, .charValue or .floatValue contains
+                   the value. If the symbol is a string, then
+                   .stringIx has the stringtable index.		*)
+
+PROCEDURE GetSymSmbl;
+(* precondition  : there is an attached symbol file which
+		   has been initialized by InitSymScan;
+   postcondition : the variable symSmbl holds the next symbol.
+		   The attribute variable lexAtt holds any value.
+		   If the symbol is an identifier, then .hashIx
+		   holds the current hash table index for the id.
+		   If the symbol is a numeric literal, then
+		   .fixValue, .charValue or .floatValue contains
+		   the value. If the symbol is a string, then
+		   .stringIx has the stringtable index.		*)
+
+
+PROCEDURE GetMakSmbl;
+(* precondition  : there is an attached make file which
+		   has been initialized by InitMakScan;
+   postcondition : the variable makSmbl holds the next symbol.
+		   The attribute variable lexAtt holds any value.
+		   If the symbol is an identifier, then .hashIx
+		   holds the current hash table index for the id.
+		   If the symbol is a numeric literal, then
+		   .fixValue.  *)
+
+PROCEDURE InitScanner;
+(* precondition  : there is an attached input stream;
+   postcondition : the input stream is initialized, and
+		   the first symbol is already fetched.		*)
+
+PROCEDURE InitSymScan;
+(* precondition  : there is an attached symbol file stream;
+   postcondition : the sym-file stream is initialized, and
+		   the first symSmbl is already fetched.	*)
+
+PROCEDURE InitMakScan;
+(* precondition  : there is an attached make file stream;
+   postcondition : the make-file stream is initialized, and
+		   the first makSmbl is already fetched.	*)
+
+END MkScanner.

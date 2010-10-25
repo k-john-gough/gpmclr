@@ -1,0 +1,64 @@
+(****************************************************************)
+(*                                                              *)
+(*             Modula-2 Compiler Source Module                  *)
+(*                                                              *)
+(*                 Compile-time Operations                      *)
+(*                                                              *)
+(*      (c) copyright 1988 Faculty of Information Technology    *)
+(*                                                              *)
+(*      original module : kjg March 1988                        *)
+(*      modifications   : correct comment for Negate            *)
+(*      last modified   : 07-Sep-88                             *)
+(*			: 11-Nov-89 CopyConstant (new proc)	*)
+(*			: 14-Nov-89 ExtractCon   (new proc)	*)
+(*                                                              *)
+(*   =============== merged mips and i386 source ============	*)
+(*			   kjg 22 Mar 93			*)
+(*								*)
+(****************************************************************
+$Log: m2compop.def,v $
+Revision 1.1  1994/04/07 04:45:06  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2CompOperations;
+
+FROM M2NodeDefs  IMPORT TypeDesc;
+FROM M2Alphabets IMPORT LexAttType, ConBlock, TerminalSymbols;
+
+    PROCEDURE Negate(VAR type : TypeDesc;
+                     VAR val  : LexAttType);
+    (* if type is not a signed type, the type
+       is changed and a range check performed
+       result type is ALWAYS ZZ, II, or RR *)
+
+
+    PROCEDURE Operation(opr : TerminalSymbols;
+                    VAR lTp : TypeDesc;
+                        rTp : TypeDesc;
+                    VAR lOP : LexAttType;
+                        rOp : LexAttType);
+    (* performs the operation on left and right operands.
+       the result overwrites the left operand and type *)
+
+    PROCEDURE OrdRelOp(opr : TerminalSymbols;
+                       oTp : TypeDesc;
+                       lOP, rOp : CARDINAL) : BOOLEAN;
+    (* performs the operation on left and right operands.
+       lOp and rOp must both be of ordinal type oTp    *)
+
+    PROCEDURE CopyConstant(conVal : LexAttType;
+			   actTyp : TypeDesc;
+			   dstTyp : TypeDesc;
+			   dstPtr : ConBlock); (* inout *)
+    (* dst points to the destination field in the heap 
+       constant. Post: constant is loaded into field *)
+
+    PROCEDURE ExtractCon(VAR con : LexAttType; (* inout *)
+			     typ : TypeDesc;
+			     cmp : ConBlock);
+    (* cmp points to component to be extracted.
+       con is overwritten to hold this component *)
+
+END M2CompOperations.

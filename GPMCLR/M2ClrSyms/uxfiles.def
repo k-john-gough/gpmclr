@@ -1,0 +1,121 @@
+
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+FOREIGN DEFINITION MODULE UxFiles;
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+
+(* This module provides the low level interface to the file system *)
+
+
+FROM SYSTEM   IMPORT ADDRESS, BYTE;
+
+TYPE
+  File;
+  OpenMode = (ReadOnly, WriteOnly, ReadWrite);
+  FilePermissionBits = 
+	(ox, ow, or, (* others permissions *)
+	 gx, gw, gr, (* group permissions  *)
+	 ux, uw, ur, (* user permissions   *)
+         x,y,z,      (* unused in the impl *)
+         ispipe, ischspec, isdir, isreg);
+
+  FileMode = SET OF FilePermissionBits;
+
+PROCEDURE GetMode(  name : ARRAY OF CHAR;
+		VAR mode : FileMode;
+		VAR done : BOOLEAN);
+(* precondition  : name must be a nul-terminated variable
+		   array,or a literal string.
+   postcondition : if done then mode has permission bits *)
+
+PROCEDURE SetMode(  name : ARRAY OF CHAR;
+		    mode : FileMode;
+		VAR done : BOOLEAN);
+(* precondition  : name must be a nul-terminated variable
+		   array,or a literal string.
+   postcondition : if done then file has permission bits *)
+
+PROCEDURE Open(VAR f:    File;       (* Open an existing file *)
+                   name: ARRAY OF CHAR;
+                   mode: OpenMode;
+               VAR done: BOOLEAN);
+
+PROCEDURE Create(VAR f:    File;     (* Open a new file *)
+                     name: ARRAY OF CHAR;
+                 VAR done: BOOLEAN);
+
+PROCEDURE Close(VAR f:    File;      (* Close a file *)
+                VAR done: BOOLEAN);
+
+PROCEDURE Delete(str : ARRAY OF CHAR;
+             VAR ok  : BOOLEAN);
+
+PROCEDURE Reset(f: File);
+(* Position the file at the beginning and set to "ReadMode"   *)
+
+PROCEDURE ReadNBytes(    f:              File;
+                         buffPtr:        ADDRESS;
+                         requestedBytes: CARDINAL;
+                     VAR read:           CARDINAL);
+  (* Read requested bytes into buffer at address *)
+  (* 'buffPtr', number of effectively read bytes *)
+  (* is returned in 'read'                       *)
+
+PROCEDURE WriteNBytes(    f:              File;
+                          buffPtr:        ADDRESS;
+                          requestedBytes: CARDINAL;
+                      VAR written:        CARDINAL);
+  (* Write requested bytes from buffer at address    *)
+  (* 'buffPtr', number of effectively written bytes  *)
+  (* is returned in 'written'                        *)
+
+PROCEDURE ReadByte(    f: File;      (* Read a byte from file *)
+                   VAR b: BYTE);
+
+PROCEDURE WriteByte( f: File;     (* Write a word to file *)
+                     b: BYTE);
+
+PROCEDURE EndFile( f : File) : BOOLEAN;
+  (* returns true if an attempt has been made
+     to read past the physical end of file   *)
+
+PROCEDURE GetPos(   f : File;
+		VAR p : CARDINAL);
+
+PROCEDURE SetPos( f : File;
+		  p : CARDINAL);
+  (* GetPos and SetPos get and set the file position *)
+
+PROCEDURE AccessTime(path     : ARRAY OF CHAR;
+		     VAR time : CARDINAL;
+		     VAR ok   : BOOLEAN);
+  (* finds time of last access to named file *)
+
+PROCEDURE ModifyTime(path     : ARRAY OF CHAR;
+		     VAR time : CARDINAL;
+		     VAR ok   : BOOLEAN);
+  (* finds time of last modification to file *)
+
+PROCEDURE StatusTime(path     : ARRAY OF CHAR;
+		     VAR time : CARDINAL;
+		     VAR ok   : BOOLEAN);
+  (* finds time of last status change of file *)
+
+
+PROCEDURE FileSize(filePath  : ARRAY OF CHAR;
+		   VAR size  : CARDINAL;
+		   VAR ok    : BOOLEAN);
+  (* gets size of file "filePath" and returns it in "size" *)
+
+END UxFiles.

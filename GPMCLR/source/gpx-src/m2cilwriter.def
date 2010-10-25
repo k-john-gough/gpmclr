@@ -1,0 +1,238 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*             Code Generation and Assembly Output              *)
+(*         Code Generation and CIL Assembly Code Output         *)
+(*                                                              *)
+(*     (c) copyright 2003 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg January 1990                      *)
+(*      modifications   : D-Code version          kjg 10-Aug-90 *)
+(*                      : dwc Feb-91   Object code output       *)
+(*                      : kjg Jun-03   CIL code output          *)
+(*								*)
+(****************************************************************)
+
+DEFINITION MODULE M2CILwriter;
+
+  IMPORT HugeInts;
+
+  FROM M2NodeDefs IMPORT TypeDesc, IdDesc, IdTree, FormalType;
+  FROM Types IMPORT Card8, Card16;
+  FROM M2Alphabets IMPORT HashBucketType;
+  FROM M2IL IMPORT LabelType, Object, ModeEnum;
+  FROM M2Designators IMPORT ExprNodeClass, AccessMode;
+
+    TYPE  LabString   = STRING OF LabelType;
+
+          TrapEnum    = 
+              (exitTrp, abortTrp, assTrp, modTrp, casTrpI, casTrpU, funTrp,
+               indexLHI, indexLHU, indexLI, indexLU, indexHI, indexHU,
+               rangeLHI, rangeLHU, rangeLI, rangeLU, rangeHI, rangeHU,
+               minIntTrp, timeTrp);
+
+          RtsCallEnum =
+              (clr, cap3, cup3, xor3, dif3, strLen, setRngIncl);
+
+    TYPE JumpTabDesc = POINTER TO JumpTabRec;
+	 JumpTabRec =
+		RECORD
+		  size  : Card16;	(* number of entries *)
+		  locn  : Card16;	(* location of fixup *)
+		  elems : ARRAY 	(* entry points      *)
+			    [0 .. 4095] OF Card16;
+		END;
+
+    TYPE  TempIndex = CARDINAL;
+    TYPE  TempList  = STRING OF TempIndex;
+    TYPE  CatEnum   = (stCat, ssCat, chCat);
+    CONST invalid   = VAL(TempIndex, 0);
+
+    VAR   wrapBkt   : HashBucketType;
+
+   (* --------------------------------------------------- *)
+   (* Create and initialize a jump table                  *)
+   (* --------------------------------------------------- *)
+    PROCEDURE CreateJumpTable(size : CARDINAL;
+			   VAR tab : JumpTabDesc);
+   (* --------------------------------------------------- *)
+
+    PROCEDURE WriteByte (b : Card8);
+    (* buffers a byte of object code *)
+
+    PROCEDURE CommentBegin();
+    PROCEDURE CommentEnd();
+    PROCEDURE CommentStart(str : ARRAY OF CHAR);
+    PROCEDURE WriteComment(str : ARRAY OF CHAR);
+    PROCEDURE LineNum(num : CARDINAL);
+
+    PROCEDURE DoObjHeader(nam : HashBucketType);
+    PROCEDURE EmitLitChain();
+    PROCEDURE DoObjEnd();
+
+   (* --------------------------------------------------- *)
+    PROCEDURE Pop;
+    PROCEDURE Duplicate;
+   (* --------------------------------------------------- *)
+    PROCEDURE CallTos(ty : TypeDesc; pNum,rNum : CARDINAL; link : BOOLEAN);
+    PROCEDURE CallMth(id : IdDesc;   pNum,rNum : CARDINAL);
+    PROCEDURE MkTrap(trId : TrapEnum);
+    PROCEDURE RtsHelper(mth : RtsCallEnum);
+    PROCEDURE PushStaticLink(id : IdDesc);
+   (* --------------------------------------------------- *)
+    PROCEDURE Switch(tab : JumpTabDesc);
+   (* --------------------------------------------------- *)
+    PROCEDURE newBlobTypeTemp(siz : CARDINAL) : TempIndex;
+    PROCEDURE newPinTemp(typ : TypeDesc) : TempIndex;
+    PROCEDURE newTemp(typ : TypeDesc) : TempIndex;
+    PROCEDURE FreeTemp(idx : TempIndex);
+    PROCEDURE NewGroup(VAR grp : TempList);
+    PROCEDURE FreeGroup(grp : TempList);
+   (* --------------------------------------------------- *)
+    PROCEDURE MakeTemp(idx : TempIndex);    (* duplicate, and save on copy *)
+    PROCEDURE PushTemp(idx : TempIndex);
+    PROCEDURE StoreTemp(idx : TempIndex);   (* save TOS in temporary locn  *)
+    PROCEDURE PushTempAdr(idx : TempIndex);
+    PROCEDURE PreDecAndPushTemp(tmp : TempIndex);              (* dec by 1 *)
+    PROCEDURE PushAndPostIncTemp(tmp : TempIndex; inc : INTEGER);
+   (* --------------------------------------------------- *)
+    PROCEDURE AllocLabel(VAR lab : LabelType);
+    PROCEDURE CodeLabel(lab : LabelType);
+    PROCEDURE CommentLabel(lab : LabelType; str : ARRAY OF CHAR);
+    PROCEDURE Branch(lab : LabelType);
+    PROCEDURE BranchEQZ(lab : LabelType);
+    PROCEDURE BranchNEZ(lab : LabelType);
+   (* --------------------------------------------------- *)
+    PROCEDURE Shift();
+    PROCEDURE LShift();
+    PROCEDURE RShift();
+    PROCEDURE LRShift();
+   (* --------------------------------------------------- *)
+    PROCEDURE PushAdr(idd : IdDesc; mod : AccessMode);
+    PROCEDURE PushVal(idd : IdDesc; mod : AccessMode; obj : Object);
+    PROCEDURE PushCon(ofst : CARDINAL);
+    PROCEDURE PushCrd(cVal : CARDINAL);
+    PROCEDURE PushInt(iVal : INTEGER);
+    PROCEDURE PushChr(iVal : CHAR);
+    PROCEDURE PushModName;
+    PROCEDURE PushZero(obj : Object);
+    PROCEDURE CopyArg(ord : INTEGER);
+   (* --------------------------------------------------- *)
+    PROCEDURE PushHugeMax();
+    PROCEDURE PushHugeMin();
+    PROCEDURE PushHuge(hVal : HugeInts.HUGEINT);
+   (* --------------------------------------------------- *)
+    PROCEDURE Add(mode : ModeEnum);
+    PROCEDURE Sub(mode : ModeEnum);
+    PROCEDURE Mul(mode : ModeEnum);
+   (* ----------------------------- *)
+    PROCEDURE DivH;
+    PROCEDURE DivI;
+    PROCEDURE DivU;
+   (* ----------------------------- *)
+    PROCEDURE ModH;
+    PROCEDURE ModI;
+    PROCEDURE ModU;
+   (* ----------------------------- *)
+    PROCEDURE RemH;
+    PROCEDURE RemI;
+    PROCEDURE RemU;
+   (* ----------------------------- *)
+    PROCEDURE Slash(mode : ModeEnum);
+    PROCEDURE AddOffset(ofst : INTEGER);
+    PROCEDURE Neg;
+    PROCEDURE NegBits;
+    PROCEDURE NegBool;
+    PROCEDURE BitOR;
+    PROCEDURE BitAND;
+    PROCEDURE BitXOR;
+   (* --------------------------------------------------- *)
+    PROCEDURE SetInOp;
+    PROCEDURE SetRelop(op : ExprNodeClass);
+    PROCEDURE IntRelop(op : ExprNodeClass);
+    PROCEDURE FltRelop(op : ExprNodeClass);
+    PROCEDURE CardRelop(op : ExprNodeClass);
+    PROCEDURE BigSetRelop(op : ExprNodeClass);
+    PROCEDURE IntRelopTrue(op : ExprNodeClass; lab : LabelType);
+    PROCEDURE FltRelopTrue(op : ExprNodeClass; lab : LabelType);
+    PROCEDURE CardRelopTrue(op : ExprNodeClass; lab : LabelType);
+    PROCEDURE IntRelopFalse(op : ExprNodeClass; lab : LabelType);
+    PROCEDURE FltRelopFalse(op : ExprNodeClass; lab : LabelType);
+    PROCEDURE CardRelopFalse(op : ExprNodeClass; lab : LabelType);
+   (* --------------------------------------------------- *)
+    PROCEDURE StoreInd(obj : Object);
+    PROCEDURE LoadInd(obj : Object);   (* load indirectly *)
+    PROCEDURE LoadObj(obj : TypeDesc); (* push valuetype  *)
+    PROCEDURE StoreObj(ty : TypeDesc); (* store valuetype *)
+   (* --------------------------------------------------- *)
+    PROCEDURE StoreVal(idd : IdDesc; mod : AccessMode; obj : Object);
+    PROCEDURE CopyBlock(align : CHAR);
+   (* --------------------------------------------------- *)
+    PROCEDURE DFloat; 
+    PROCEDURE FFloat; 
+    PROCEDURE TruncU(test : BOOLEAN); 
+    PROCEDURE TruncI(test : BOOLEAN); 
+    PROCEDURE FloorD(test : BOOLEAN);
+    PROCEDURE FloorF(test : BOOLEAN);
+    PROCEDURE RoundD(test : BOOLEAN);
+    PROCEDURE RoundF(test : BOOLEAN);
+    PROCEDURE HTrunc(test : BOOLEAN);
+    PROCEDURE HEntier(test : BOOLEAN);
+    PROCEDURE HRound(test : BOOLEAN);
+    PROCEDURE MkCrd;
+    PROCEDURE MkR64;
+    PROCEDURE MkR32;
+    PROCEDURE ConvItoI64;
+    PROCEDURE ConvUtoI64;
+    PROCEDURE MkU32(test : BOOLEAN);
+    PROCEDURE MkI32(test : BOOLEAN);
+    PROCEDURE MkU8(test : BOOLEAN);
+    PROCEDURE AbsVal(obj : Object);
+   (* --------------------------------------------------- *)
+    PROCEDURE GetVectorBlob();
+    PROCEDURE GetBlobAddress();
+    PROCEDURE GetVectorHigh();
+    PROCEDURE PutVectorHigh();
+    PROCEDURE GetVectorLimit();
+    PROCEDURE CallVectorConcat(n : CatEnum);
+    PROCEDURE CallVectorExpand();
+    PROCEDURE CallVectorCtor();
+    PROCEDURE CallVectorDtor();
+   (* --------------------------------------------------- *)
+    PROCEDURE Return;
+   (* --------------------------------------------------- *)
+    PROCEDURE DefineXSR(proc : IdDesc);
+    PROCEDURE hasXSR(proc : IdDesc) : BOOLEAN;
+    PROCEDURE lexLevel(id : IdDesc) : CARDINAL;
+   (* --------------------------------------------------- *)
+    PROCEDURE cilEqFrm(lFrm, rFrm : FormalType) : BOOLEAN;
+    PROCEDURE cilEqTyp(lTyp, rTyp : TypeDesc)   : BOOLEAN;
+   (* --------------------------------------------------- *)
+
+    PROCEDURE EmitMyVars(m : IdDesc; t : IdTree);
+
+    PROCEDURE NamespaceBegin(n : HashBucketType; m : IdDesc);
+    PROCEDURE NamespaceEnd  (n : HashBucketType);
+
+    PROCEDURE ClassBegin(n : HashBucketType);
+    PROCEDURE ClassEnd  (n : HashBucketType);
+    PROCEDURE EmitClassDefs();
+    PROCEDURE DoPInvokeImpls();
+
+    PROCEDURE GenerateEntry(id : IdDesc);
+    (* pre  : id has all info needed for stack frame generation *)
+    (* post : proc state is evaluated, entry pseudo's emitted   *)
+    (*        value arrays are copied and any soapspace fetched *)
+
+    PROCEDURE GenerateExit(id : IdDesc);
+    (* post : entry reg-save code is emitted and code buffer    *)
+    (*        dumped, soap is released, saved regs restored,    *)
+    (*        and the exit code emitted				*)
+
+    PROCEDURE EmitWrapper;
+    PROCEDURE callSmbl() : HashBucketType;
+    PROCEDURE WrapperCopy(arg : INTEGER; siz : CARDINAL);
+
+END M2CILwriter.
+

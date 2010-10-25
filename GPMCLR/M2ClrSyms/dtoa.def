@@ -1,0 +1,49 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+FOREIGN DEFINITION MODULE DtoA;
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+(*
+ * Provides an interface to the VC7 libraries for d <=> a conversions
+ *)
+
+  FROM Types  IMPORT Int32;
+  FROM SYSTEM IMPORT ADDRESS;
+
+  VAR errno : Int32;
+  CONST ERANGE = 34;   (* Result too large *)
+
+  PROCEDURE strtod(VAR s00 : ARRAY OF CHAR) : REAL;
+
+  PROCEDURE dtoa(d       : REAL;
+		 mode    : Int32;
+		 ndigits : Int32;
+	       VAR decpt : Int32;
+	       VAR sign  : BOOLEAN) : ADDRESS;
+  (*
+   *  Meaning of mode values:
+   *
+   *    0 ==> shortest string that yields d when read in
+   *              and rounded to nearest.
+   *    1 ==> like 0, but with Steele & White stopping rule;
+   *              e.g. with IEEE P754 arithmetic , mode 0 gives
+   *              1e23 whereas mode 1 gives 9.999999999999999e22.
+   *    2 ==> max(1,ndigits) significant digits.  This gives a
+   *              return value similar to that of ecvt, except
+   *              that trailing zeros are suppressed.
+   *    3 ==> through ndigits past the decimal point.  This
+   *              gives a return value similar to that from fcvt,
+   *              except that trailing zeros are suppressed, and
+   *              ndigits can be negative.
+   *)
+END DtoA.

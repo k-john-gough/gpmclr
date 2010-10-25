@@ -1,0 +1,58 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+(*
+(* !SYSTEM! *) DEFINITION MODULE SYSTEM;
+
+  (* This is a system module; it is known to the compiler and  *)
+  (* activated by import. It is pre-loaded, and thus has no    *)
+  (* symbol file. Some of the following declarations are sym-  *)
+  (* bolic only and use generic forms which cannot be compiled *)
+  (* The system types have special semantics in most cases.    *)
+
+  TYPE  LOC  = smallest addressable unit;
+	BYTE = LOC;
+	WORD = ARRAY [0 .. bytes per word - 1] OF LOC;
+	ADDRESS = POINTER TO LOC;
+
+  PROCEDURE ADR   (VAR v : AnyType) : ADDRESS;
+  (* returns storage address of the parameter *)
+
+  PROCEDURE ADDADR(a : ADDRESS; i : CARDINAL) : ADDRESS;
+  (* returns the address a "incremented" by i *)
+
+  PROCEDURE SUBADR(a : ADDRESS; d : CARDINAL) : ADDRESS;
+  (* returns the address a "decremented" by i *)
+
+  PROCEDURE DIFADR(a, b : ADDRESS) : INTEGER;
+  (* returns the difference (a - b) in bytes  *)
+
+  PROCEDURE TSIZE (AnyType; optional tags) : CARDINAL;
+  (* returns storage size of t, ignoring tags *)
+
+  PROCEDURE CAST  (AnyType1; x : AnyType2) : AnyType1;
+  (* returns x cast to type AnyType1 *)
+
+  PROCEDURE SHIFT (VAR b : BITSET, n : INTEGER) : BITSET;
+  PROCEDURE ROTATE(VAR b : BITSET; n : INTEGER) : BITSET;
+  (* direction of shifts and rotates is such that
+	b := SHIFT(BITSET{0}, 1);
+     assigns b = BITSET{1}, rotate is same     *)
+
+  PROCEDURE ROUND (r : REAL) : INTEGER;
+  (*  returns the integer part of r rounded towards zero. *)
+  
+  PROCEDURE ENTIER (r : REAL) : INTEGER;
+  (*  returns the integer part of r rounded towards -infinity *)
+
+END SYSTEM.
+*)

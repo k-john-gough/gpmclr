@@ -1,0 +1,84 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+(****************************************************************)
+(*                                                              *)
+(*    High level input and output procedures for HUGEINTS	*)
+(*                                                              *)
+(*       modifications   : kjg September 1995	 	        *)
+(*                                                              *)
+(****************************************************************)
+
+FOREIGN DEFINITION MODULE HugeInOut; 
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+
+  FROM HugeInts IMPORT HUGEINT;
+  FROM UxFiles  IMPORT File;
+
+  VAR      Done : BOOLEAN ;  (* Status of some ReadInt procedure calls.
+                                TRUE if the operation was successful,
+                                FALSE otherwise. *)
+ 
+           termCh : CHAR ;   (* Terminating character ReadInt call *)
+
+        PROCEDURE ReadInt    (VAR n: HUGEINT);
+	PROCEDURE TextReadInt(f : File; VAR n : HUGEINT);
+	PROCEDURE StrReadInt (str : ARRAY OF CHAR; VAR n : HUGEINT);
+        (* Precondition  : TRUE
+           Postcondition : Done = TRUE if and only if the next sequence of 
+                           characters on the input stream represents a
+                           HUGEINT value. The variable termCh is set to the
+                           value of the character that terminates this 
+                           sequence.  *)
+
+ 
+        PROCEDURE WriteInt    (num : HUGEINT; wid : CARDINAL);
+	PROCEDURE TextWriteInt(fil : File; num : HUGEINT; wid : CARDINAL);
+	PROCEDURE StrWriteInt (num : HUGEINT; 
+                               wid : CARDINAL;
+                           VAR out : ARRAY OF CHAR);
+        (* Precondition  : fil is open, str is long enough for output.
+           Postcondition : The value of i is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The decimal number system is used and a sign is 
+                           displayed only for negative numbers. 
+                           If wid=0 at least one blank is emitted.  *)
+
+
+        PROCEDURE WriteOct    (num : HUGEINT; wid : CARDINAL);
+	PROCEDURE TextWriteOct(fil : File; num : HUGEINT; wid : CARDINAL);
+	PROCEDURE StrWriteOct (num : HUGEINT; 
+                               wid : CARDINAL;
+                           VAR out : ARRAY OF CHAR);
+        (* Precondition  : fil is open, str is long enough for output.
+           Postcondition : The value of n is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The octal number system is used.
+                           If wid=0 at least one blank is emitted.  *)
+
+
+        PROCEDURE WriteHex    (num : HUGEINT; wid : CARDINAL);
+	PROCEDURE TextWriteHex(fil : File; num : HUGEINT; wid : CARDINAL);
+	PROCEDURE StrWriteHex (num : HUGEINT; 
+                               wid : CARDINAL;
+                           VAR out : ARRAY OF CHAR);
+        (* Precondition  : fil is open, str is long enough for output.
+           Postcondition : The value of n is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The hexadecimal number system is used.
+                           If wid=0 at least one blank is emitted.  *)
+ 
+END HugeInOut.

@@ -1,0 +1,32 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*    Emit Wrapper functions for String to Array conversions    *)
+(*                                                              *)
+(*    (c) copyright 1996 Faculty of Information Technology.     *)
+(*                                                              *)
+(*      original module : kjg July 1996                         *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2wrappe.def,v $
+Revision 1.1  1996/08/06 23:41:36  gough
+Initial revision
+
+
+*****************************************************************)
+
+DEFINITION MODULE M2DcfWrappers;
+  FROM M2NodeDefs IMPORT IdDesc, TypeDesc;
+  FROM M2Designators IMPORT DesigRec;
+  FROM GenSequenceSupport IMPORT Sequence;
+
+  PROCEDURE MkWrap(VAR desig : DesigRec;   (* procedure identifier *)
+		   VAR acSeq : Sequence;   (* actual param list    *)
+		       exTyp : TypeDesc;   (* procedure typeDesc   *)
+		       thisP : IdDesc);	   (* current procDesc     *)
+		
+  PROCEDURE WriteWrappers();
+	
+END M2DcfWrappers.

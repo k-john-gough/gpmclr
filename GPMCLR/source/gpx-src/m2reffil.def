@@ -1,0 +1,42 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*                   Reference File Builder.                    *)
+(*                                                              *)
+(*    (c) copyright 1988 Faculty of Information Technology.     *)
+(*                                                              *)
+(*      original module : kjg October 1988                      *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2reffil.def,v $
+Revision 1.1  1994/04/07 05:13:22  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2RefFile;
+  FROM M2Alphabets IMPORT HashBucketType;
+
+  PROCEDURE WriteRefFile(callSy : HashBucketType);
+
+(****************************************************************)
+(* Format of the reference file (version number #2) is -        *)
+(*                                                              *)
+(*      RefFile = Header Imports eofSy.				*)
+(*      Header  = (moduleSy | implementationSy) fixNum          *)
+(*                      ident ident keySy [nilSy] [bar].        *)
+(*      Imports = importSy {ident keySy | LibNam} endSy.        *)
+(*      LibNam  = litstring.					*)
+(*                                                              *)
+(* First ident is name of module, second is call symbol		*)
+(* fixNum is syntax version (2 in this version), or		*)
+(* profilVerNum if profiling had been specified at compilation  *)
+(*  nilSy      ==> body of this module is empty			*)
+(*  bar symbol ==> this is a !LIBRARY or !NONREC module 	*)
+(*  LibNam     ==> an imported !MACRO header file specified	*)
+(*  use of a library with name given by the litstring		*)
+(****************************************************************)
+
+END M2RefFile.

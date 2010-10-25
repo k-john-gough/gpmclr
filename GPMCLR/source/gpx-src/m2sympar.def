@@ -1,0 +1,63 @@
+(****************************************************************)
+(*                                                              *)
+(*             Modula-2 Compiler Source Module                  *)
+(*                                                              *)
+(*          Symbol File Parser and Tree Constructor.            *)
+(*                                                              *)
+(*     (c) copyright 1988 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg march 1988                        *)
+(*      modifications   :                                       *)
+(*			: 14-Sep-89 procAlias module list (kjg) *)
+(*			:  3-Apr-90 headerSpx		  (kjg) *)
+(*                                                              *)
+(****************************************************************
+$Log: m2sympar.def,v $
+Revision 1.4  1997/01/16 05:15:06  gough
+clean up unused imports.
+
+Revision 1.3  1997/01/16 05:12:32  gough
+new procedure BindAllFields
+
+Revision 1.2  1994/07/01 05:46:30  lederman
+versionNumber moved to M2Machine
+
+# Revision 1.1  1994/04/07  05:25:29  lederman
+# Initial revision
+#
+*****************************************************************)
+
+
+DEFINITION MODULE M2SymParser;
+
+FROM M2NodeDefs  IMPORT IdDesc;
+FROM GenSequenceSupport IMPORT Sequence;
+
+  VAR     librarySpx : CARDINAL;
+
+    (****************************************************)
+    PROCEDURE ParseSymbolFile(modPtr : IdDesc); 
+    (* modPtr^ is INOUT 				*)
+    (* precondition  : a partly built AST is under 	*)
+    (*		       construction, and a new symbol 	*)
+    (*		       file has been attached. 		*)
+    (* postcondition : normal return implies symbol 	*)
+    (*		       file was OK.  Invalid files 	*)
+    (*		       abort to exception handler.	*)
+
+    PROCEDURE MakeSymbolFile();
+
+    PROCEDURE CopyEnums(VAR scope : IdDesc;
+			    enums : Sequence);
+    (* copies enum constants to the given scope         *)
+
+    PROCEDURE BindAllFields();
+    (* pre  : all symbol files have now been read       *)
+    (* post : all fields of have offsets allocated      *)
+
+    PROCEDURE CheckElaboration(seq : Sequence);
+    (* checks that hidden types &  procs are elaborated *)
+    (****************************************************)
+
+END M2SymParser.
+

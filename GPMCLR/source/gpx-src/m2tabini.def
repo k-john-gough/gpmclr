@@ -1,0 +1,52 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*                Symbol Table Initialization                   *)
+(*								*)
+(*     (c) copyright 1988 Faculty of Information Technology     *)
+(*								*)
+(*      original module : kjg february 1988                     *)
+(*	modifications   :					*)
+(*								*)
+(****************************************************************
+$Log: m2tabini.def,v $
+Revision 1.2  1997/01/16 05:21:18  gough
+new procs: ExclStrExt -- excludes string procs from visibility
+           PreconIdDesc, AssertIdDesc -- returning IdDescs.
+
+Revision 1.1  1994/04/07 05:27:20  lederman
+Initial revision
+
+*****************************************************************)
+
+
+DEFINITION MODULE M2TabInitialize;
+
+  FROM M2NodeDefs IMPORT IdDesc, TyNodeClass, TypeDesc;
+
+PROCEDURE Initialize;
+(* precondition  : Reserved words have already been entered
+                   in the table.
+   postcondition : Standard objects are entered in the table,
+                   and inserted in the IdentTree belonging
+                   to the IdDesc pervasiveUnit.
+                   SYSTEM ojects are inserted in the IdentTree
+                   belonging to the IdentRec at head of the
+                   globalModList.                              *)
+
+PROCEDURE PointerTo(obj : TyNodeClass) : TypeDesc;
+(* returns pointer to standard type descriptors                *)  
+(* special cases: PointerTo(sets) returns pointer to BITSET    *)
+(*                PointerTo(procTypes) returns pointer to PROC *)
+
+PROCEDURE CastIdDesc() : IdDesc;
+PROCEDURE PreconIdDesc() : IdDesc;
+PROCEDURE AssertIdDesc() : IdDesc;
+(* returns a pointer to the IdDesc for SYSTEM.CAST, *)
+(* ProgArgs.Assert respectively, even if those      *)
+(* identifiers are not otherwise visible	    *)
+
+PROCEDURE ExclStrExt; (* remove string extension procedures *)
+
+END M2TabInitialize.

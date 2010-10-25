@@ -1,0 +1,159 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*               Definition of symbol alphabets                 *)
+(*       Definition of types global to the scanner modules      *)
+(*                                                              *)
+(*            (c) copyright 1987 SoftWare Automata.             *)
+(*                                                              *)
+(*      original module : kjg july 1987                         *)
+(*      modifications   :                                       *)
+(* 1            revisions for Logitech compiler 29-Sep-87       *)
+(* 2            removal of funtional predicates following       *)
+(*              timed tests on iapX86  (kjg)    13-Feb-88       *)
+(* 3            adding remSy and NilSy (kjg)    15-Feb-88       *)
+(* 4            adding charLit         (kjg)    03-Mar-88       *)
+(* 5            deleting byteLength    (kjg)    30-Mar-88       *)
+(* 6            adding flag filErr     (kjg)    16-Apr-88       *)
+(* 6            restructure LexAttType (kjg)    26-Jul-88       *)
+(* 7            adding ModState type   (kjg)    09-Nov-88       *)
+(* 8            adding extra options   (kjg)    26-Jan-89       *)
+(* 9		adding profile option  (kjg)    16-Apr-89	*)
+(* 10		new flags ffcp, ccst   (kjg)    10-Jun-89	*)
+(* 11		new res word FORWARD   (kjg)    11-Aug-89	*)
+(* 12		new super verbose flag (kjg)    13-Sep-89	*)
+(* 13		new flag for overflow  (kjg)    13-Mar-90	*)
+(* 14		flags for optimisation (kjg)    13-Mar-90	*)
+(* 15		strHigh becomes short  (kjg)    20-Jul-90	*)
+(*								*)
+(*   =============== merged mips and i386 source ============	*)
+(*			   kjg 22 Mar 93			*)
+(*                                                              *)
+(****************************************************************
+$Log: m2alphab.def,v $
+Revision 1.6  1997/01/16 02:29:47  gough
+new symbol in TerminalSymbols:  preConSy
+cleanup of Flags enumeration
+new ModState flag extensions
+
+Revision 1.5  1996/11/27 01:48:14  lederman
+add finallySy, retrySy, exceptSy
+
+Revision 1.4  1996/11/14 04:47:08  gough
+introduce new Flag element "isStrIx" for string subscript expressions
+
+Revision 1.3  1996/10/09 05:54:42  lederman
+make Spellix = Card32; HashBucketType = Card16; for changes to dynamic tables
+
+Revision 1.2  1996/07/30 05:28:37  gough
+new symbol stringSy
+
+Revision 1.1  1994/04/07 04:40:35  lederman
+Initial revision
+*****************************************************************)
+
+DEFINITION MODULE M2Alphabets;
+
+IMPORT SYSTEM;
+FROM Types IMPORT Card32, Card16;
+
+TYPE    TerminalSymbols =
+  (* the ordinal sequence of the first few of these symbols *)
+  (* is pinned by the need to maintain synchronism with the *)
+  (* order in the type ExprNodeClass from M2StructureDefs   *)
+  (* 00..03B *)       ( errSy, andSy, divSy, star,
+  (* 04..07B *)         slash, modSy, remSy, plus,
+  (* 10..13B *)         minus, orSy, equals, notEq, 
+  (* 14..17B *)         greater, grEqual, less, lessEq, 
+  (* 20..23B *)         inSy, notSy, lPar, rPar, 
+  (* 24..27B *)         lBrac, rBrac, lCurly, rCurly, 
+  (* 30..33B *)         comma, semi, dot, colon, 
+  (* 34..37B *)         dotDot, bar, upArrow, assignSy, 
+  (* 40..43B *)         recordSy, setSy, pointerSy, toSy,
+  (* 44..47B *)         importSy, exportSy, fromSy, ofSy,
+  (* 50..53B *)         qualifiedSy, beginSy, caseSy, bySy,
+  (* 54..57B *)         ifSy, thenSy, elsifSy, elseSy,
+  (* 60..63B *)         loopSy, exitSy, repeatSy, untilSy,
+  (* 64..67B *)         whileSy, doSy, withSy, forSy,
+  (* 70..73B *)         returnSy, endSy, constSy, typeSy,
+  (* 74..76B *)         definitionSy, implementationSy, varSy,
+  (* 77..102B *)        nilSy, procedureSy, moduleSy, ident,
+  (* 103..106B *)       arraySy, litstring, fixNum, floatNum,
+  (* 107..112B *)       charLit, charNum, keySy, bigSetCon, 
+  (* 113..116B *)       eofSy, forwardSy, heapConst, stringSy,
+  (* 117..122B*)        finallySy, retrySy, exceptSy, preconSy);
+
+TYPE    SymbolSet = SET OF TerminalSymbols;
+
+
+TYPE    Spellix         = Card32;  (* spelling index (was [0 .. 63 * 1024]) *)
+        HashBucketType  = Card16;  (* hash table index (was [0 .. 5987])    *)
+        Order = (before, equal, after);
+
+(* Note that for each identifier string both the Spellix 
+   and the bucket number are unique. However the spellix
+   values will be in order of first occurence, while the
+   bucket numbers will be randomly distributed. Therefore,
+   the bucket number should be used as the key for binary
+   search trees in the scope resolution module.		*)
+
+TYPE   Flags = (indexTests, stackTests, 
+		rangeTests, ovfloTests, isStrIx,
+		fastCode, compact, 
+		warnings, lexErrors, filErrors, 
+		synErrors, semErrors, listings);
+
+       FlagSet = SET OF Flags;
+
+CONST  errors  = FlagSet{lexErrors, filErrors, synErrors, semErrors};
+
+TYPE   ModStateFlags = (defMod, 
+                        impMod, 
+                        progMod,
+                        sysMod,     (* ==> system def, no impl.  *)
+			macroMod,   (* ==> this def is !FOREIGN  *)
+			directMod,  (* ==> this def is !FOR_C    *)
+			nonRec,     (* ==> this def is !LIBRARY  *)
+                        objectCode, (* ==> object code emitted   *)
+                        verbose,    (* ==> longer error messages *)
+			superVerbose,  (* even longer messages   *)
+                        dangerous,  (* ==> no warning messages   *)
+                        persistent, (* ==> C-code is named file  *)
+			profiling,  (* ==> profiling requested   *)
+
+			extensions, (* ==> gpm M2 extensions     *)
+		  (* optimization flags for native code versions *)
+			assertOff,     (* assertion testing off  *)
+			peepOpt,       (* peephole optimizer on  *)
+			cseElim,       (* common sub-exp elimin  *)
+			valTrack,      (* value tracking optim.  *)
+			loopOpt,       (* loop optimizations     *)
+			argOpt,        (* arg order optimization *)
+			retCutAll,     (* callee cuts parameters *)
+                        emitCil);
+
+       ModStateSet   = SET OF ModStateFlags;
+
+TYPE   ConBlock   = POINTER TO ARRAY [0 .. 65535] OF CHAR;
+
+TYPE   LexAttType = RECORD
+                      CASE (* eek, no tag ! *) : TerminalSymbols OF
+                      | ident     : hashIx     : HashBucketType;
+                      | keySy     : keyValue   : CARDINAL;
+                      | fixNum    : fixValue   : CARDINAL; (* this next... *)
+                           | ifSy : intValue   : INTEGER;  (* allows casts *)
+                      | floatNum  : floatValue : REAL;
+                      | litstring, charLit, charNum :
+                                    stringIx   : Spellix;  (* first 2 only *)
+                                    strHigh    : Card16;   (* first 2 only *)
+                                    charValue  : CHAR;     (* last 2  only *)
+                      | nilSy     : adrsValue  : SYSTEM.ADDRESS;
+                      | bigSetCon : patternIx  : Spellix;
+                      | errSy     : bytes      : ARRAY [0..7] OF CHAR;
+                                    (* "7" should be bytesInReal - 1 *)
+                      ELSE (* empty *)
+                      END
+                    END;
+
+END M2Alphabets.

@@ -1,0 +1,42 @@
+(****************************************************************)
+(*                                                              *)
+(*                 Modula-2 Compiler Source Module              *)
+(*                                                              *)
+(*                      Runtime literal chain                   *)
+(*                                                              *)
+(*     (c) copyright 1988 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg November 1988                     *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2litcha.def,v $
+Revision 1.2  1994/07/15 04:12:12  lederman
+add literalZero constant for 0.0 optimisation
+
+# Revision 1.1  1994/04/07  04:58:58  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2LitChain;
+FROM M2Designators IMPORT ExprDesc;
+
+  PROCEDURE FixLiteral(VAR lit : ExprDesc);
+  (* precondition  : lit^ is a lit-Node, lit^.exprType <> NIL   *)
+  (* postcondition : if lit^.exprType^.tyClass IN {sets,SS,S1}  *)
+  (*                 then lit^ is assigned an rtOffset and is   *)
+  (*                 on the chain of values to dump in obj file *)
+  (*                 else lit^ is unchanged.                    *)
+  (* rtOffset values of sets are aligned on word boundaries,    *)
+  (* strings are nul terminated but arbitrarily aligned         *)
+
+  VAR chainHead : ExprDesc; (* head of chain to dump *)
+      chainTail : ExprDesc; (* tail of chain to dump *)
+
+  PROCEDURE ConstDataSize() : CARDINAL;
+  (* returns the constant data array in target machine words    *)
+
+  CONST literalZero = MAX(CARDINAL);  (* rtOffset = literalZero => 0.0 *)
+
+END M2LitChain.

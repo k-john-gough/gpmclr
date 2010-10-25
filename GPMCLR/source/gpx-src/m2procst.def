@@ -1,0 +1,108 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*  Code generator state for the currently compiling procedure  *)
+(*                                                              *)
+(*     (c) copyright 1990 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg February 1990                     *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2procst.def,v $
+Revision 1.5  1996/08/06 23:40:52  gough
+this module now exports NeedsDestPtr
+
+Revision 1.4  1996/05/10 06:54:00  lederman
+make parSiz param. of GetActuals an INTEGER
+
+Revision 1.3  1994/10/12 06:00:02  lederman
+change GetActuals to return Int16 parSize
+
+# Revision 1.2  1994/10/11  07:19:17  gough
+# new exported procedure IsRefParam notes that a value param is passed
+# by reference.  This is a superset of those which are copied by the
+# callee, which are noted by the predicate IsCopyParam.  A param might
+# be a RefParam but not a CopyParam if sunStructs is true.
+#
+# Revision 1.1  1994/04/07  05:12:13  lederman
+# Initial revision
+*****************************************************************)
+
+DEFINITION MODULE M2ProcState;
+
+  FROM Types IMPORT Card8;
+  FROM GenSequenceSupport IMPORT Sequence;
+  FROM M2NodeDefs IMPORT IdDesc, TypeDesc;
+  FROM M2Designators IMPORT ExprDesc;
+
+  VAR isMain  : BOOLEAN; (* read only ! *)
+      current : IdDesc;
+
+	(*
+	 *  arrangement of the stack frame is as follows --
+	 *
+	 *	|=======================|
+	 *	|   args of this proc	|
+	 *	|=======================| <--- fp   (framePtr)
+	 *	|  local vars of proc	|
+	 *	|-----------------------| 
+	 *	|   stack temporaries	|
+	 *	|-----------------------| ---- tmpOffset (neg)
+	 *	|  val array copy area  |
+	 *	|-----------------------| ---- copyOffset (neg)
+	 *	|  value open array     |
+	 *	| copies (variable size)|
+	 *	|=======================| <--- sp   (stackPtr)
+	 *	|      |  stack  |	|
+	 *	V      V  growth V	V
+	 *
+	 *  The areas above copyOffset have a size which is
+         *  statically known, the other areas are of a size
+	 *  which is only known at runtime
+         *)
+
+      tmpOffset   : INTEGER;	(* offset to bottom of tmp area    *)
+			        (* this number always non-positive *)
+      copyOffset  : INTEGER;	(* offset to bottom of copy area   *)
+			        (* this number always non-positive *)
+      isLeaf      : BOOLEAN;
+
+  (*===============================================================*)
+
+  TYPE  ParInfo   = POINTER TO RECORD
+		      ofst : INTEGER;
+	 	      expr : ExprDesc;
+		      dTyp : TypeDesc;
+		    END;
+
+  (*===============================================================*)
+
+  PROCEDURE FormalSize(frmTy : TypeDesc) : CARDINAL;
+
+  PROCEDURE GetActuals(inSeq : Sequence;  (* of actual params *)
+		       frmTy : TypeDesc;
+		   VAR parSiz : INTEGER;  (* real cutPars no. *)
+		   VAR outSq1 : Sequence; (* of ParInformation*)
+		   VAR outSq2 : Sequence);(* of ParInformation*)
+
+  PROCEDURE StatLinkAttributes;
+  (* evaluates static link attributes for all procedures *)
+
+  PROCEDURE SetCurrentEnv(id : IdDesc);
+  (* compute state for the new procedure *)
+
+  PROCEDURE LexLevel(id : IdDesc) : Card8;
+  (* pre: id is a procedure *)
+
+  PROCEDURE IsCopyParam(ty : TypeDesc) : BOOLEAN;	(* Oct 92 *)
+  (* true ==> this is a CALLEE copy parameter *)
+
+  PROCEDURE IsRefParam(ty : TypeDesc) : BOOLEAN;	(* Oct 94 *)
+  (* true ==> this structpar is passed by ref *)
+
+  PROCEDURE NeedsDestPtr(ty : TypeDesc) : BOOLEAN;
+  (* true ==> ty passes dest ptr as extra par *)
+
+END M2ProcState.

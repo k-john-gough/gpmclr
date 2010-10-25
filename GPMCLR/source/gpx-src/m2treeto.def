@@ -1,0 +1,28 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*               Tree to Tree Transformations                   *)
+(*                                                              *)
+(*      (c) copyright 1988 Faculty of Information Technology    *)
+(*                                                              *)
+(*      original module : kjg May 1988                          *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2treeto.def,v $
+Revision 1.1  1994/04/07 05:31:34  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2TreeToTree;
+
+PROCEDURE TransformTree;
+(* precondition  : (1) the abstract syntax tree for the input file
+                       has been built, and semantically checked
+                   (2) CurrentFlags() * errors = {}
+                   (3) NOT (defMod IN CurrentFlags())
+   postcondition : tree has been transformed, attributes evaluated etc. *)
+
+END M2TreeToTree.

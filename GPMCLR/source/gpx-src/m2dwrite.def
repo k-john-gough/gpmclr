@@ -1,0 +1,425 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*             Code Generation and Assembly Output              *)
+(*                                                              *)
+(*     (c) copyright 1990 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg January 1990                      *)
+(*      modifications   : D-Code version          kjg 10-Aug-90 *)
+(*                      : dwc Feb-91   Object code output       *)
+(*								*)
+(*   =============== merged mips and i386 source ============	*)
+(*			   kjg 22 Mar 93			*)
+(*								*)
+(****************************************************************
+$Log: m2dwrite.def,v $
+Revision 1.11  1997/01/16 02:39:45  gough
+extra param to EmitAssertTest, so as to be able to send an arbitrary
+trap name.  Used for the precondition trap.
+
+Revision 1.10  1996/11/27 01:49:39  lederman
+add FreeDescriptor() & PropagateException()
+
+Revision 1.9  1996/05/10 07:00:45  lederman
+change all procedures that take param. offset to use INTEGER
+
+Revision 1.8  1996/01/08 05:21:28  gough
+Signature of Deref, Assign, ReverseAssign changed for alias info
+
+Revision 1.7  1995/10/10 23:15:36  lederman
+DCode V3 HugeInt support stuff
+
+# Revision 1.6  1995/09/15 07:41:13  gough
+# extra "mergeId" param for PushBool
+#
+# Revision 1.5  1995/01/05  05:39:01  gough
+# delete Jump, include Switch in interface
+#
+# Revision 1.4  1994/10/12  05:55:38  lederman
+# pass param bytes as Int16 for all calls
+#
+# Revision 1.3  1994/10/12  04:43:35  gough
+# new procedure RngAssert for possible later use
+#
+# Revision 1.2  1994/06/07  07:04:13  gough
+# new procedure NegateBool
+#
+# Revision 1.1  1994/04/07  04:51:05  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2DWriter;
+
+(*
+ *		Notes on D-Code version
+ *
+ *  The D-Code version uses the same interface to 
+ *  M2ObjectCode as the native code version on MIPS. It is
+ *  expected that as the software evolves, the code of this
+ *  module will migrate back into M2ObjectCode, so that that
+ *  module emits the DCodes directly rather than using this
+ *  procedural interface. This module should therefore thin
+ *  out over time, and finally disappear entirely
+ *)
+
+  FROM GenSequenceSupport IMPORT Sequence;
+  FROM M2DDefinitions IMPORT Object, LabelType, TempIndex, ModeEnum; 
+  FROM M2Designators IMPORT ExprNodeClass, AccessMode;
+  FROM M2Alphabets IMPORT HashBucketType;
+  FROM M2NodeDefs IMPORT IdDesc;
+  FROM SYSTEM IMPORT WORD, BYTE, ADDRESS;
+  FROM Types IMPORT Card8, Card16;
+
+
+   PROCEDURE CurrentLoc() : INTEGER;
+   (* returns current buffer offset location *)
+
+(* Procedures to write out object code records                      *)
+
+   PROCEDURE WriteByte (b : Card8);
+   (* buffers a byte of object code *)
+
+(* 
+ *      Definition of Risc R-Codes
+ *
+ *  This module defines the interface between the gpm 
+ *  front-end and any native code generating modules. The 
+ *  front-end should require no information about the code
+ *  generation except for this interface. The back-end need
+ *  no information about the frontend except for the 
+ *  structure of the id descriptors. Ultimately even this
+ *  coupling should be removed if at all possible.
+ *
+ *  first the pushes, in all cases stack depth increases by 1
+ *)
+
+    PROCEDURE PushAdr(id   : IdDesc;
+		      mod  : AccessMode);
+    (* pre  : id is IdDesc of a variable, or a procedure    *)
+    (* post : addr of id is on stacktop of virtual machine  *)
+
+    PROCEDURE PushRtsAdr(nam : HashBucketType);
+
+    TYPE JumpTabDesc = POINTER TO JumpTabRec;
+	 JumpTabRec =
+		RECORD
+		  size  : Card16;	(* number of entries *)
+		  locn  : Card16;	(* location of fixup *)
+		  elems : ARRAY 	(* entry points      *)
+			    [0 .. 4095] OF Card16;
+		END;
+
+    PROCEDURE CreateJumpTable(size : Card16;
+			   VAR tab : JumpTabDesc);
+    (* create and initialize a jump table *)
+
+    PROCEDURE EmitJumpTable(tab : JumpTabDesc;
+			    def : Card16);
+    (* fix default targets with def, emit table and advise fixup *)
+
+    PROCEDURE PushModName;
+
+    PROCEDURE EmitAssertTest(xLab : LabelType;
+			     trap : HashBucketType;
+			     rOff : CARDINAL;
+			     line : CARDINAL);
+
+    PROCEDURE EmitTest(name  : HashBucketType;
+		       lo,hi : INTEGER);
+
+    PROCEDURE RngAssert(lo,hi : INTEGER);
+
+    PROCEDURE PushMemTmp(off : TempIndex);
+    (* pushes the address of the memory temporary; off is   *)
+    (* the offset from the start of the temporary area      *)
+
+    PROCEDURE PushLit   (val : WORD);
+    (* post : val is top of stack of virtual machine        *)
+
+    PROCEDURE PushCon   (val : INTEGER);
+    (* post : addr of constant is tos of virtual machine	*)
+
+    PROCEDURE PushTmp   (tmp : TempIndex);
+    (* pre  : tmp is offset of value from start of temp area *)
+    (* post : value is top of stack of virtual machine       *)
+
+    PROCEDURE Duplicate();
+    (* post : The top of stack is duplicated		*)
+
+    PROCEDURE LineNum    (num : CARDINAL);
+    (* post : The top of stack is duplicated		*)
+
+(*
+ *  now the derefs
+ *)
+
+    PROCEDURE Deref(obj : Object; idn : IdDesc; mod : AccessMode);
+    (* pre  : a word, byte etc. address is on top of stack      *)
+    (* post : address is popped, target is on top of stack      *)
+    (*        The depth of the stack is left unaltered          *)
+
+(*
+ *  now the pops and assigns
+ *)
+
+    PROCEDURE PopNDiscard();
+    (* post : top of abstract stack is popped                   *)
+
+    PROCEDURE MakeFpParam(size   : Card8;
+			  offset : INTEGER);
+    PROCEDURE AdjustParam(size   : Card8;
+			  offset : INTEGER);
+    (* pre  : param in "size" bytes on top of abstract stack    *)
+    (* post : param is on top of concrete stack                 *)
+    (*        offset is the offset in the param assembly area   *)
+
+    PROCEDURE PushDstPointer(isRec : BOOLEAN);
+    PROCEDURE MakeDstPointer(size  : CARDINAL;
+			     isRec : BOOLEAN);
+    (* post : top of stack is moved to the destination ptr loc  *)
+
+    PROCEDURE FlattenAdr;
+    (* pre  : seg:off in 4 bytes on tos                         *)
+    (* post : flat address on tos 				*)
+
+    PROCEDURE Assign(obj : Object; idn : IdDesc; mod : AccessMode);
+    (* pre  : address is on top of stack, value below that      *)
+
+    PROCEDURE ReverseAssign(obj : Object; idn : IdDesc; mod : AccessMode);
+    (* pre  : datum is on top of stack, address below it        *)
+    (* post : datum is stored at target location. Pop(2)        *)
+
+    PROCEDURE CopyBlock(align : CHAR);
+    (* pre  : size in bytes is on top of stack, source address  *)
+    (*	      below that and destination address below that     *)
+    (*        again		                                *)
+    (* post : datum is stored at target location. Pop(3)        *)
+
+    PROCEDURE CopyRecord(size  : CARDINAL;
+			 ofst  : INTEGER;
+    			 align : CHAR);
+    (* pre  : source address is on top of the abstract stack    *)
+    (* post : copy of record is on top of concrete stack. Pop1  *)
+    (*        ofst is param offset for case of fixed param area *)
+
+    PROCEDURE StrLength();
+    (* pre  : HIGH(str) is on tos, adr of str below that	*)
+    (* post : code is generated to find length, result on tos   *)
+
+(*
+ *  now the temporary manipulations
+ *)
+
+    PROCEDURE MakeTemp(tix : TempIndex);
+    (* post : the element on tos is associated with temp tix    *)
+    (* 	      where tix is the offset from the temp area start  *)
+
+    PROCEDURE MakeWith(dummy : IdDesc; 
+			tix  : TempIndex);
+    (* pre  : adr of with selector exp is tos, dummy is needed  *)
+    (* post : address of top of stack is stored in the assigned *)
+    (*        memory temporary, the varOffset of the dummy is   *)
+    (*        set and the stack popped by one word		*)
+(*
+ *  now the branches and label manipulations
+ *)
+    PROCEDURE AllocateFiIndex(VAR index : CARDINAL);
+    PROCEDURE PushFi(index : CARDINAL);
+    PROCEDURE PopFi(index : CARDINAL);
+
+    PROCEDURE AllocateLabel(VAR lab : LabelType);
+
+    PROCEDURE Switch(jmpLab : LabelType); (* replaces Jump *)
+    PROCEDURE CodeLabel(sno : LabelType);
+    PROCEDURE LoopLabel(sno : LabelType);
+    PROCEDURE LoopEnd(sno : LabelType);
+
+    PROCEDURE Branch(lab : LabelType);
+    (* post : unconditional branch to lab is emitted		*)
+
+    PROCEDURE BranchEQZ(lab : LabelType);
+    PROCEDURE BranchNEZ(lab : LabelType);
+    (* pre  : a word (possibly Boolean) is on top of the stack  *)
+    (* post : branch taken if equal/not equal to zero. Pop(1)   *)
+
+    CONST fallThrough = VAL(LabelType,0);
+
+    PROCEDURE PushBool(fLab, tLab : LabelType;
+		       mergeId    : IdDesc);
+    (* post : branches to fLab leave FALSE on top of stack      *)
+    (*	      branches to tLab leave TRUE on top of stack       *)
+
+(*
+ *  now the procedure call operations
+ *)
+
+    PROCEDURE CallTOSProc(nByts : INTEGER;
+			  pNum  : CARDINAL);
+    PROCEDURE CallTOSFunc(nByts : INTEGER;
+			  obj   : Object;
+			  pNum  : CARDINAL);
+    (* pre  : a procedure address is on tos			*)
+    (* post : a call to the procedure is emitted                *)
+    (*        in the case of function calls ret val is tos	*)
+
+    PROCEDURE CallProc(name  : HashBucketType;
+		       nByts : INTEGER;
+		       pNum  : CARDINAL);
+    PROCEDURE CallFunc(name  : HashBucketType;
+		       nByts : INTEGER;
+		       obj   : Object;
+		       pNum  : CARDINAL);
+    (* post : a call to the procedure is emitted                *)
+    (*        in the case of function calls ret val is tos	*)
+
+    PROCEDURE RTSfunc(trp  : HashBucketType; 
+		      obj  : Object;
+		      pNum : CARDINAL);
+    (* emits a call to the runtime system function "trp"  *)
+
+    PROCEDURE RTSproc(trp  : HashBucketType;
+		      pNum : CARDINAL);
+    (* emits a call to the runtime system procedure "trp" *)
+
+    PROCEDURE Trap(trp  : HashBucketType;
+		   pNum : CARDINAL);
+    (* emits a call to "trp", and does not expect return  *)
+
+(*
+ *  now the procedure entry and exit operations
+ *)
+
+    PROCEDURE DoObjHeader(nam : HashBucketType);
+    PROCEDURE DoObjEnd();
+
+    PROCEDURE GenerateEntry(id : IdDesc);
+    (* pre  : id has all info needed for stack frame generation *)
+    (* post : proc state is evaluated, entry pseudo's emitted   *)
+    (*        value arrays are copied and any soapspace fetched *)
+
+
+    TYPE LabString = STRING OF LabelType;
+
+    PROCEDURE GenerateExit(id : IdDesc; labS : LabString);
+    (* post : entry reg-save code is emitted and code buffer    *)
+    (*        dumped, soap is released, saved regs restored,    *)
+    (*        and the exit code emitted				*)
+
+    PROCEDURE FreeDescriptor(exceptDesc : IdDesc);
+    (* post : exception descriptor is released			*)
+
+    PROCEDURE PropagateException(id : IdDesc; exceptDesc : IdDesc);
+    (* post : generates default exception propagation code	*)
+
+    PROCEDURE MakeRetValue(obj : Object);
+    (* post : top of stack is moved to the abstract return loc  *)
+
+    PROCEDURE GenerateReturn();
+    (* post : a goto lab instruction is emitted			*)
+
+(*
+ *  now the operations
+ *  for all binops, the right op is tos, left under that
+ *  for unary ops, operand is on tos
+ *)
+
+    PROCEDURE NegateInt(test : BOOLEAN);
+    PROCEDURE NegateBool;
+    PROCEDURE NegateFlt;
+    PROCEDURE NegateDbl;
+    PROCEDURE AbsInt(test : BOOLEAN);
+    PROCEDURE AbsFlt;
+    PROCEDURE AbsDbl;
+    (* All operations Pop(0)                                    *)
+
+    PROCEDURE AddOffset(offset : INTEGER);
+    PROCEDURE AddAdr();
+
+    PROCEDURE Add(mode : ModeEnum);
+    PROCEDURE Sub(mode : ModeEnum);
+    PROCEDURE Mul(mode : ModeEnum);
+    PROCEDURE Div(mode : ModeEnum);
+    PROCEDURE Mod(mode : ModeEnum);
+    PROCEDURE Rem(mode : ModeEnum);
+    PROCEDURE Slash(mode : ModeEnum);
+    (* All operations Pop(1)        				*)
+
+(*
+ *  fp operations
+ *)
+
+    PROCEDURE AddFlt;
+    PROCEDURE SubFlt;
+    PROCEDURE MulFlt;
+    PROCEDURE SlashFlt;
+    PROCEDURE AddDbl;
+    PROCEDURE SubDbl;
+    PROCEDURE MulDbl;
+    PROCEDURE SlashDbl;
+    PROCEDURE TruncD(mode : ModeEnum);	(* dbl to int/crd*)
+    PROCEDURE TruncF(mode : ModeEnum);	(* flt to int/crd*)
+    PROCEDURE FloorF(test : BOOLEAN);	(* dbl to int/crd*)
+    PROCEDURE FloorD(test : BOOLEAN);	(* flt to int/crd*)
+    PROCEDURE RoundF(test : BOOLEAN);	(* dbl to int/crd*)
+    PROCEDURE RoundD(test : BOOLEAN);	(* flt to int/crd*)
+    PROCEDURE DFloat;		(* crd to double *)
+    PROCEDURE FFloat;		(* crd to float  *)
+    PROCEDURE ItoF;		(* int to float  *)
+    PROCEDURE ItoD;		(* int to double *)
+    PROCEDURE DtoF;		(* dbl to float  *)
+    PROCEDURE FtoD;		(* flt to double *)
+
+(*
+ *  Bitwise operations
+ *)
+
+    PROCEDURE BitNegate;  (* Pop(0) *)
+    PROCEDURE BitAND;     (* Pop(1) *)
+    PROCEDURE BitXOR;     (* Pop(1) *)
+    PROCEDURE BitOR;      (* Pop(1) *)
+
+    PROCEDURE Shift;
+    PROCEDURE Rotate;
+    PROCEDURE LeftShift;
+    (* for small numbers Op(1) yields tos <- tos * 2. Pop(1)    *)
+(*
+ *  these procedures migrated from i386 ...
+ *)
+    PROCEDURE SetIncl;	  (* bit index on top, value below that *)
+    PROCEDURE SetExcl;	  (* bit index on top, value below that *)
+(*
+ *  relops producing Boolean results. All operations Pop(1)
+ *)
+    PROCEDURE SetInOp;
+    PROCEDURE SetRelop (op : ExprNodeClass);  (* word sets *)
+    PROCEDURE CardRelop(op : ExprNodeClass);
+    PROCEDURE IntRelop (op : ExprNodeClass);
+    PROCEDURE RealRelop(op : ExprNodeClass);
+    PROCEDURE SRealRelop(op : ExprNodeClass);
+    PROCEDURE BigSetRelop (op : ExprNodeClass);
+    (* pre  : the right op is on tos, left op below that        *)
+    (* post : tos contains Boolean result of given comparison   *)
+
+    PROCEDURE MakeWord(mode : ModeEnum);
+    PROCEDURE MakeIntLong;
+    PROCEDURE MakeCrdLong;
+    PROCEDURE NegateLong (test : BOOLEAN);
+    PROCEDURE HugeRelop(op : ExprNodeClass);
+    PROCEDURE MulLong(test : BOOLEAN);
+    PROCEDURE AddLong(test : BOOLEAN);
+    PROCEDURE SubLong(test : BOOLEAN);
+    PROCEDURE SlashLong;
+    PROCEDURE RemLong;
+    PROCEDURE DivLong;
+    PROCEDURE ModLong;
+    PROCEDURE AbsLong(test : BOOLEAN);
+    PROCEDURE HFloat;
+    PROCEDURE HTrunc(test : BOOLEAN);
+    PROCEDURE HRound(test : BOOLEAN);
+    PROCEDURE HEntier(test : BOOLEAN);
+
+END M2DWriter.
+

@@ -1,0 +1,195 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*           Name-handling for the lexical scanner.             *)
+(*       Contains nested string and hash table modules.         *)
+(*         Also contains procedures for constant sets.          *)
+(*								*)
+(*	     (c) copyright 1987 SoftWare Automata.		*)
+(*								*)
+(*	original module : kjg july 1987				*)
+(*      modifications   : deletion of Purge()     kjg 14-Feb-88 *)
+(*                      : add resetTop for sets,  kjg 16-Mar-88 *)
+(*                      : add DumpString for C    kjg 16-Oct-88 *)
+(*                      : add StringTable()       kjg 03-Dec-88 *)
+(*			: add !MACRO bucket	  kjg 21-Apr-89 *)
+(*			: add proc CopyString     kjg 23-Apr-89 *)
+(*			: used bucket ADT	  kjg 27-May-89 *)
+(*			: add IncSourceRep	  jrh 02-Apr-92 *)
+(*			: RelaxLimit, GetFileName jrh 14-May-92	*)
+(*								*)
+(*   =============== merged mips and i386 source ============	*)
+(*			   kjg 22 Mar 93			*)
+(*								*)
+(****************************************************************
+$Log: m2nameha.def,v $
+Revision 1.3  1997/01/16 04:00:54  gough
+        new procedure ExcludeExt (no exclude extensions).
+
+Revision 1.2  1996/10/09 05:53:13  lederman
+removed DumpString()
+
+Revision 1.1  1994/04/07 05:02:03  lederman
+Initial revision
+*****************************************************************)
+
+DEFINITION MODULE M2NameHandler;
+
+FROM M2Alphabets IMPORT TerminalSymbols, Spellix, HashBucketType;
+
+(* some global hash bucket numbers *)
+
+VAR  sysBkt, anonBkt, stdBkt,       (* for internal checks *)
+     allocBkt, deallBkt,            (* macro substitution  *)
+     libBkt, nonRecBkt,		    (* various !pragmas!   *)
+     foreignBkt, retCutBkt,
+     directBkt, inlineBkt : HashBucketType;
+
+(* string table procedures *)
+
+PROCEDURE GetSourceRep(ident   : HashBucketType;
+                       VAR str : ARRAY OF CHAR;
+                       VAR idx : CARDINAL);
+(* precondition  : 0 <= idx <= HIGH(str); N.B. idx is <INOUT>
+   postcondition : the ident string is copied from
+		   str[pre-idx] to str[idx - 1]. str[idx] is
+		   SYSTEM.TermChar. If str is too short,
+		   string is truncated.				*)
+
+PROCEDURE GetFileName(ident : HashBucketType;
+                       VAR str : ARRAY OF CHAR;
+                       VAR idx : CARDINAL);
+(* As for GetSourceRep, but NEVER prefix with "_".
+   Use for file names which can't clash with C.    *)
+
+PROCEDURE StringsEqual(s1, s2 : Spellix) : BOOLEAN;
+(*  Case-sensitive test based on the ASCII collating sequence.	*)
+
+PROCEDURE GetString(spix : Spellix; VAR str : ARRAY OF CHAR);
+(* postcondition : characters are written up to the end of the 
+                   output string, or a 0C, whichever is first  *)
+
+PROCEDURE DumpBytes(spix : Spellix; num : CARDINAL);
+(* precondition  : output file has been opened & spix is valid *)
+(* postcondition : num bytes are written to the symbol or
+                   reference file. If num = 0 then bytes up 
+                   to and including the 0C are written         *)
+
+PROCEDURE StringTable(spix : Spellix) : CHAR;
+
+(****************************************************************)
+TYPE UsedSetPtr;
+PROCEDURE InitUsed (VAR ptr : UsedSetPtr);
+PROCEDURE DispUsed (VAR ptr : UsedSetPtr);
+PROCEDURE MarkUsed (ptr : UsedSetPtr; hsh : HashBucketType);
+PROCEDURE CheckUsed(ptr : UsedSetPtr; hsh : HashBucketType) : BOOLEAN;
+(****************************************************************)
+
+(* The following procedures are used in the following way ...
+
+	MarkInterimSpellix; (* save spellix just in case *)
+        WHILE <condition> DO
+	  <get a char ch>;
+	  CopyAndHash(ch); (* or CopyChar(ch) *)
+	END;
+	MarkEnd();  (* mark string end in table    *)
+	LookupAndEnter(...);
+*)
+PROCEDURE MarkInterimSpellix;
+(* postcondition : high-tide of string table is saved as index
+                   of next string to be entered.                *)
+
+PROCEDURE CopyChar(ch : CHAR);
+(* postcondition : ch is added to end of current interim string *)
+
+PROCEDURE CopyAndHash(ch : CHAR);
+(* postcondition : ch is added to end of current interim string,
+		   and hash bucket value is accumulated.	*)
+
+PROCEDURE InterimSpellix() : Spellix;
+(* precondition  : MarkInterimSpellix has been called.
+   postcondition : result is interim spellix.			*)
+
+PROCEDURE MarkEnd();
+(* postcondition : String is terminated by the
+		   reserved value SYSTEM.TermChar		*)
+
+(****************************************************************)
+
+PROCEDURE SpellingIndex(hash : HashBucketType) : Spellix;
+(* precondition  : hash corresponds to a loaded identifier;
+   postcondition : result is spelling index of ident.		*)
+
+PROCEDURE LookupAndEnter(VAR symbol : TerminalSymbols;
+                         VAR hashIx : HashBucketType);
+(* precondition  : an interim string has been marked and 
+                   characters were hashed on entry.
+   postcondition : symbol designates the token (whether reserve
+                   word or ident). If symbol is an ident, hashIx
+                   is entry, otherwise unchanged. If not a new id
+                   then Purge has been called to discard string *)
+
+PROCEDURE EnterString(str : ARRAY OF CHAR;
+                  VAR hIx : HashBucketType);
+(* Used for entering standard identifiers etcetera.
+   postcondition : hIx is index of entered string. *)
+
+PROCEDURE CopyString(str : ARRAY OF CHAR;
+                 VAR hIx : Spellix);
+(* Used for entering literal strings in string table *)
+
+(****************************************************************)
+(* For the following set-operation procedures it is important   *)
+(* that parameters be checked by the CALLER. These procedures   *)
+(* are unable to issue the appropriate error messsages.         *)
+(* Commit makes the last set on the stack permanent.            *)
+(* Normal usage is as follows :                                 *)
+(*                                                              *)
+(*      MakeEmptySet(...);                                      *)
+(*      -- do whatever operations                               *)
+(*      -- binary ops leave result in sole temporary            *)
+(*      Commit();                                               *)
+(*                                                              *)
+(* In the parser, ConstExpr() does first 3 lines automatically  *)
+(****************************************************************)
+
+PROCEDURE MakeEmptySet(size : CARDINAL; (* bit-vector in bytes  *)
+                     VAR ix : Spellix);
+(* pre : for Modula sets, size = ty^.size (always a multiple of *)
+(*       bytesInWord), for scratch bit-vectors any cardinal > 0 *)
+(* post: the set ix is always above the temporary boundary      *)
+
+PROCEDURE Commit(); (* temporaries start at current tide *)
+
+PROCEDURE SetInclude(ix : Spellix; el : CARDINAL);
+
+PROCEDURE SetExclude(ix : Spellix; el : CARDINAL);
+
+PROCEDURE SetRngIncl(ix : Spellix; lo, hi : CARDINAL);
+
+PROCEDURE SetInOp(left : CARDINAL; right : Spellix) : BOOLEAN;
+(* post: if the set was temporary, it is cut off string table *)
+
+PROCEDURE SetRelop(size : CARDINAL;
+                   opr  : TerminalSymbols;
+                   left, right : Spellix) : BOOLEAN;
+(* post: temporary operands have been discarded from table    *)
+
+PROCEDURE SetOperate(size  : CARDINAL;
+                     opr   : TerminalSymbols;
+                 VAR left  : Spellix;
+                     right : Spellix);
+(* This procedure may modify the left param to point to a temp. *)
+(* post: left is ALWAYS a temporary. If both were temporary,
+         the right operand has been discarded from string table.
+         The variable "tide" points past the end of the result  *)
+(****************************************************************)
+
+PROCEDURE ExcludeExt;    (* modify tables to exclude extensions *)
+
+(****************************************************************)
+
+PROCEDURE Summary(); (* reports memory usage etc. *)
+
+END M2NameHandler.

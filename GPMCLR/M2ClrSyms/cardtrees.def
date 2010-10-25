@@ -1,0 +1,39 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1992 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE CardTrees;
+  FROM CardSequences IMPORT Sequence;
+
+  TYPE Tree; (* pointer to root, or NIL for empty tree *)
+
+  PROCEDURE InitTree(VAR tre : Tree);
+  (* postcondition : tre is an empty tree *)
+
+  PROCEDURE IsEmpty(tre : Tree) : BOOLEAN;
+  (* postcondition : returns "tre is the empty Tree" *)
+
+  PROCEDURE Insert(VAR tre : Tree; element : CARDINAL);
+  (* precondition : tre is a valid tree, possibly empty   *)
+  (* postcondition: element is in tree & tree is ordered  *)
+
+  PROCEDURE Delete(VAR tre : Tree; element : CARDINAL);
+  (* precondition : tre is a valid ordered tree, or empty *)
+  (* postcondition: element not in tree, tree still valid *)
+
+  PROCEDURE Lookup(tre : Tree; element : CARDINAL) : BOOLEAN;
+  (* precondition : tre is a valid ordered tree, or empty *)
+
+  PROCEDURE MakeSequence(tre : Tree; VAR seq : Sequence);
+  (* postcondition : seq has preorder contents of tre *)
+
+END CardTrees.

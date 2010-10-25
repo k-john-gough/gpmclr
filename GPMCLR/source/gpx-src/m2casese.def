@@ -1,0 +1,26 @@
+(****************************************************************)
+(*                                                              *)
+(*                Modula-2 Compiler Source Module               *)
+(*								*)
+(*                Case Statement Selector-list Scan             *)
+(*								*)
+(*      (c) copyright 1988 Faculty of Information Technology    *)
+(*								*)
+(*      original module : kjg August 1988                       *)
+(*      modifications   :                                       *)
+(*								*)
+(****************************************************************)
+
+
+DEFINITION MODULE M2CaseSelectors;
+
+  FROM M2StructureDefs IMPORT CaseStatDesc;
+  FROM GenSequenceSupport IMPORT Sequence;
+
+PROCEDURE FindMinAndMax(caseInfo : CaseStatDesc;
+                        caseSequ : Sequence);
+(* precondition  : caseInfo^.exprType <> NIL *)
+(* postcondition : selMin and selMax have been determined;
+                   any semantic errors have been reported *)
+
+END M2CaseSelectors.

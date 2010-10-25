@@ -1,0 +1,153 @@
+(*
+ * =========== macro processed output from MPP  ==========
+ *
+ * input file  : mknameha.dpp
+ * time stamp  : 1997:01:14::10:47:34
+ *
+ * output file : mknameha.def
+ * created at  : 2004:01:12::14:17:55
+ *
+ * options ... :  /Ddotnet86
+ *
+ * =======================================================
+ *)
+
+(* -- RCS header --
+	$Log:	mknameha.dpp,v $
+Revision 1.1  93/03/25  14:32:24  mboss
+Initial revision
+
+*)
+(* 
+ *  extracted with 
+ * 	    "opsys" == "windows"
+ * 	   "endian" == "little"
+ *	"processor" == "iap386"
+ *)
+
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*           Name-handling for the lexical scanner.             *)
+(*       Contains nested string and hash table modules.         *)
+(*         Also contains procedures for constant sets.          *)
+(*								*)
+(*	     (c) copyright 1987 SoftWare Automata.		*)
+(*								*)
+(*	original module : kjg july 1987				*)
+(*      modifications   : deletion of Purge()     kjg 14-Feb-88 *)
+(*                      : add resetTop for sets,  kjg 16-Mar-88 *)
+(*                      : add DumpString for C    kjg 16-Oct-88 *)
+(*                      : add StringTable()       kjg 03-Dec-88 *)
+(*			: add !MACRO bucket	  kjg 21-Apr-89 *)
+(*			: add proc CopyString     kjg 23-Apr-89 *)
+(*			: used bucket ADT	  kjg 27-May-89 *)
+(*								*)
+(*               CUT DOWN VERSION FOR PC GPMAKE                 *)
+(*                     dwc September 1991                       *)
+(*								*)
+(*			: mods for decode as well kjg 20-May-92 *)
+(*			: 30-Apr-92 jrh add Summary cf m2nameha *)
+(*								*)
+(****************************************************************)
+
+DEFINITION MODULE MkNameHandler;
+
+FROM MkAlphabets IMPORT TermSymbols, Spellix, HashBucketType,
+			FileNameType;
+
+(* some global hash bucket numbers *)
+
+VAR  sysBkt, anonBkt, stdBkt,       (* for internal checks *)
+     allocBkt, deallBkt,            (* macro substitution  *)
+     libBkt, nonRecBkt,		    (* various !pragmas!   *)
+     foreignBkt, 
+     directBkt, inlineBkt : HashBucketType;
+
+(* string table procedures *)
+
+PROCEDURE GetSourceRep(ident   : HashBucketType;
+                       VAR str : ARRAY OF CHAR;
+                       VAR idx : CARDINAL);
+(* precondition  : 0 <= idx <= HIGH(str); N.B. idx is <INOUT>
+   postcondition : the ident string is copied from
+		   str[pre-idx] to str[idx - 1]. str[idx] is
+		   SYSTEM.TermChar. If str is too short,
+		   string is truncated.				*)
+
+PROCEDURE MakeFileName (name  : HashBucketType; 
+			fType : FileNameType;
+			VAR fName : ARRAY OF CHAR);
+
+PROCEDURE FindFileName (nam : HashBucketType;
+			ext : FileNameType;
+		    VAR out : ARRAY OF CHAR;
+		    VAR ok  : BOOLEAN);
+(* find file name in local directory *)
+
+PROCEDURE FindFileNameOnPath(   nam : HashBucketType;
+				ext : FileNameType;
+			       path : ARRAY OF CHAR;
+			    VAR out : ARRAY OF CHAR;
+			    VAR ok  : BOOLEAN);
+(* find file name on given path *)
+
+(****************************************************************)
+
+(* The following procedures are used in the following way ...
+
+	MarkInterimSpellix; (* save spellix just in case *)
+        WHILE <condition> DO
+	  <get a char ch>;
+	  CopyAndHash(ch); (* or CopyChar(ch) *)
+	END;
+	MarkEnd();  (* mark string end in table    *)
+	LookupAndEnter(...);
+*)
+PROCEDURE MarkInterimSpellix;
+(* postcondition : high-tide of string table is saved as index
+                   of next string to be entered.                *)
+
+PROCEDURE CopyChar(ch : CHAR);
+(* postcondition : ch is added to end of current interim string *)
+
+PROCEDURE CopyAndHash(ch : CHAR);
+(* postcondition : ch is added to end of current interim string,
+		   and hash bucket value is accumulated.	*)
+
+PROCEDURE InterimSpellix() : Spellix;
+(* precondition  : MarkInterimSpellix has been called.
+   postcondition : result is interim spellix.			*)
+
+PROCEDURE MarkEnd();
+(* postcondition : String is terminated by the
+		   reserved value SYSTEM.TermChar		*)
+
+(****************************************************************)
+
+(* The following two procedures are used by decode.mod *)
+PROCEDURE StringTable(spix : Spellix) : CHAR;
+PROCEDURE EnterString(strn : ARRAY OF CHAR;
+		  VAR hbkt : HashBucketType);
+
+PROCEDURE SpellingIndex(hash : HashBucketType) : Spellix;
+(* precondition  : hash corresponds to a loaded identifier;
+   postcondition : result is spelling index of ident.		*)
+
+PROCEDURE LookupAndEnter(VAR symbol : TermSymbols;
+                         VAR hashIx : HashBucketType);
+(* precondition  : an interim string has been marked and 
+                   characters were hashed on entry.
+   postcondition : symbol designates the token (whether reserve
+                   word or ident). If symbol is an ident, hashIx
+                   is entry, otherwise unchanged. If not a new id
+                   then Purge has been called to discard string *)
+
+(****************************************************************)
+
+PROCEDURE Commit(); (* temporaries start at current tide *)
+
+PROCEDURE Summary(); (* reports memory usage etc. *)
+
+END MkNameHandler.

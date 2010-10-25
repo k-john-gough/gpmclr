@@ -1,0 +1,67 @@
+
+(***********************************************************************)
+(*                                                                     *)
+(*                Modula_2 Compiler RealMath Library Module            *)
+(*                                                                     *)
+(*            Provides a number of mathematical                        *)
+(*            functions and REAL/INTEGER conversions                   *)
+(*                                                                     *)
+(*                                                                     *)
+(*       original module : ISO WG-13, March  1989                      *)
+(*       modifications   : arcsin and arccos not implemented           *)
+(*                       : pms 13 Jan 94 No -lm for winnt platform     *)
+(*                                                                     *)
+(***********************************************************************)
+
+
+(* !FOREIGN *)DEFINITION MODULE RealMath;
+
+   IMPORT IMPLEMENTATION FROM "M2clrRts";
+
+   CONST
+	PI   = 3.1415926535897932385;
+	Exp1 = 2.7182818285450452354;
+
+   PROCEDURE sqrt(x : REAL):REAL;
+   (* Precondition  : x is defined and >=0.0
+      Postcondition : returns the square root of x.
+   *)
+
+   PROCEDURE exp(x : REAL):REAL;
+   (* Precondition  : x is defined.
+      Postcondition : returns the exponential of x.   *)
+
+   PROCEDURE ln(x : REAL):REAL;
+   (* Precondition  : x is defined and >= 0.0.
+      Postcondition : returns the natural logarithm of x.  *)
+
+   PROCEDURE sin(theta: REAL):REAL;
+   (* Precondition  : theta is defined and is an angle in radians. 
+      Postcondition : returns the sine of theta.  *)
+
+   PROCEDURE cos(theta: REAL):REAL;
+   (* Precondition  : theta is defined and is an angle in radians. 
+      Postcondition : returns the cosine of theta.  *)
+
+   PROCEDURE tan(theta : REAL):REAL;
+   (* Precondition  : theta is defined and is an angle in radians.
+      Postcondition : returns the tangent of x.   *)
+
+
+   PROCEDURE arctan(x : REAL):REAL;
+   (* Precondition  : x is defined
+      Postcondition : returns the arctangent of x expressed in radians.  *)
+
+
+   PROCEDURE power(x, y: REAL):REAL;
+   (* Precondition  : true
+      Postcondition : returns an approximation of 'x' raised to
+		      the power of 'y'.   *)
+
+
+   PROCEDURE round(r : REAL):INTEGER;
+   (* Precondition  : r is defined and the result is representable as an 
+                      INTEGER.
+      Postcondition : returns the INTEGER approximation = r.  *)
+
+END RealMath.

@@ -1,0 +1,122 @@
+(****************************************************************)
+(*                                                              *)
+(*                Modula-2 Compiler Source Module               *)
+(*                                                              *)
+(*                     Input-Output Routines.                   *)
+(*                                                              *)
+(*     (c) copyright 1988 Faculty of Information Technology     *)
+(*                                                              *)
+(*        original module : kjg july 1987                       *)
+(*        modifications   : 24-Mar-88: adding symbol file write *)
+(*        last modified   : 17-July revised error reporting     *)
+(*			  :  9-Jan-90 new proc EmitFileName     *)
+(*			  : 13-Apr-90 new proc DiagName		*)
+(*                        : Feb-91    debugOn flag added        *)
+(*                                                              *)
+(****************************************************************
+$Log: m2inout.def,v $
+Revision 1.2  1997/01/16 03:49:56  gough
+symbol file opening and closing procedures have been revised to support
+the re-entrant symbol-file parsing.
+
+Revision 1.1  1994/04/07 04:55:18  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2InOut;
+
+  IMPORT SYSTEM;
+  FROM M2Alphabets IMPORT HashBucketType, Spellix, TerminalSymbols;
+
+  TYPE  Position = RECORD line, pos : CARDINAL END;
+        FileNameString = ARRAY [0 .. 127] OF CHAR;
+
+  VAR   lastPos  : Position; (* position of last symbol *)
+        debugOn  : BOOLEAN;  (* in debug mode ?  *)
+        inpName  : FileNameString;
+
+(* --- main input file procedures ----------------------------- *)
+
+  PROCEDURE OpenInput;
+  (* in case of errors, lexErrors is set in flags *)
+
+  PROCEDURE OpenConfigFile;
+
+  PROCEDURE ReadCh(VAR ch : CHAR);
+  (* reads a character from the main input stream *)
+
+  PROCEDURE MarkPosAndReadCh(VAR ch : CHAR);
+  (* the current stream position is marked, and
+     the next character in the stream is fetched  *)
+
+(* --- symbol file procedures --------------------------------- *)
+
+  PROCEDURE OpenOldSymFile(modHash : HashBucketType;
+			   VAR  ok : BOOLEAN);
+  (* open, read and buffer symbol file *)
+  PROCEDURE CloseOldSymFile();
+  (* discard the buffer of symbol file *)
+
+  PROCEDURE CreateNewSymFile(modHash : HashBucketType);
+  PROCEDURE CloseNewSymFile();
+
+  PROCEDURE ReadSb(VAR ch : SYSTEM.BYTE);
+  (* reads a character from the sym-file stream *)
+
+  PROCEDURE WriteSb(sb : SYSTEM.BYTE);
+  (* and accumulate symbol checksum key *)
+
+  PROCEDURE WriteSymbolKey();
+
+  PROCEDURE ListKey(modName : HashBucketType;
+		    keyValu : CARDINAL);
+
+  PROCEDURE FindHeaderPath( name : HashBucketType;  (* module sought *)
+			VAR path : Spellix;	    (* abs. pathname *)
+			VAR lNam : Spellix);	    (* opt. library  *)
+  (* postcondition : if "<name>.h" was found, path holds the spellix
+		     of the absolute pathname, else path undefined
+		     if header starts with /* !lnam! */ then lNam
+		     has spellix of "lnam" else lNam = 0        *)
+
+(* --- error reporting procedures ----------------------------- *)
+
+  PROCEDURE Error(nr : CARDINAL);
+  PROCEDURE ErrIdent(nr : CARDINAL; id : HashBucketType);
+  PROCEDURE ReportErrors(); (* creates error report on screen *)
+
+(* --- abort procedures --------------------------------------- *)
+
+  PROCEDURE AbortMessage(str : ARRAY OF CHAR);
+  (* outputs message to stdErr stream and aborts *)
+
+  PROCEDURE SymbolMessage(expected : TerminalSymbols;
+                          found    : TerminalSymbols);
+  (* outputs message to stdErr stream and aborts.
+     Used for unrecoverable errors in a symbol input file  *)
+
+(* --- object file procedures --------------------------------- *)
+
+  PROCEDURE CreateObjFile(modHash : HashBucketType);
+
+  PROCEDURE EmitFileName(str : ARRAY OF CHAR);
+  (* outputs the given string followed by the input 
+     filename, in quotes				        *)
+
+  PROCEDURE CloseObjFile;
+
+  PROCEDURE WriteObjByte(ob : SYSTEM.BYTE);
+
+(* --- reference file procedures -----------------------------  *)
+
+  PROCEDURE CreateRefFile(modHash : HashBucketType);
+  PROCEDURE CloseRefFile;
+  PROCEDURE WriteRb(rb : SYSTEM.BYTE);
+
+(* --- diagnostic procedures ---------------------------------  *)
+
+  PROCEDURE DiagName(hsh : HashBucketType);
+  (* writes name to StdError *)
+
+END M2InOut.   

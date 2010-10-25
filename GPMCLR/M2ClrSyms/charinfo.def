@@ -1,0 +1,52 @@
+
+(* !LIBRARY! *) DEFINITION MODULE CharInfo;
+
+(* Proposed BSI/ISO Standard Modula-2 I/O Library
+ * Copyright Roger Henry, University of Nottingham
+ * Version WG/4.01, February 1989
+ * This version editted by kjg to conform to D103, September 1989.
+ * Permission is given to copy this Definition Module, with the
+ * copyright notice intact, for the purposes of evaluation and test.
+ * At the stage of a formal draft standard, Copyright will be transferred
+ * to BSI (and through BSI to other recognised standards bodies).
+ * Status: for review by BSI/IST/5/13;
+           for review by ISO/IEC JTC1/SC22/WG13
+*)
+
+(*
+Purpose: Provide information about values of the type CHAR
+*)
+
+(* Revision History:                                         *)
+(*                  pms 12 Jan 94 Now a preprocessed dpp file*)
+
+PROCEDURE IsEOL(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is the implementation-defined   *)
+  (*       character used to represent end of line internally              *)
+
+PROCEDURE IsDigit(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is a decimal digit              *)
+
+PROCEDURE IsSpace(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is a whitespace character       *)
+
+PROCEDURE IsSign(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is + or - sign                  *)
+
+PROCEDURE IsLetter(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is a letter         	           *)
+
+PROCEDURE IsUpper(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is an upper case letter         *)
+
+PROCEDURE IsLower(ch: CHAR): BOOLEAN;
+  (* post: returned value is true iff "ch" is a lower case letter          *)
+
+PROCEDURE IsControl(ch : CHAR): BOOLEAN;
+  (* post: returns true iff "ch" is a control character (including EOL)    *)
+
+PROCEDURE EOL(): CHAR;
+  (* post: returned value is the implementation-defined character          *)
+  (*       used to represent end of line internally                        *)
+
+END CharInfo.

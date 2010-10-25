@@ -1,0 +1,87 @@
+
+(****************************************************************)
+(*                                                              *)
+(*            Gardens Point Compiler Source Module		*)
+(*                                                              *)
+(*                File name lookup and create			*)
+(*                                                              *)
+(*    (c) copyright 1992 Faculty of Information Technology.     *)
+(*	This module may be used freely for the construction	*)
+(*	of tools which interwork with gardens point compilers	*)
+(*                                                              *)
+(*      original module : kjg July 1992				*)
+(*      modifications   : kjg  Sep 1992 lowercase default, use  *)
+(*				GPNAMES=MIXED for mixed case... *)
+(*                        pms 12 Jan 94 Now a dpp file          *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE GpFiles;
+
+    FROM UxFiles IMPORT File;
+(* 
+ *	this module implements the gpm file lookup strategy.
+ *	It was introduced to make the change from lower case
+ *	to mixed case file names in a consistent manner for
+ *	gpm, build, gpmake, gpscript, decode, mkenumio and
+ *	other tools which lookup files based on module names.
+ *	The lookup strategy is backward compatible with the
+ *	filenames created by previous version of gpm.
+ *
+ *	  GPNAMES=MIXED			  GPNAMES=LOWER
+ *	lookup(1) name as given;	lookup(1) lower case; 
+ *	lookup(2) lower case;		lookup(2) name as given;
+ *	lookup(3) DOS length;		lookup(3) DOS length;
+ *)
+    CONST fileNameLength    = 79;	(* max base name length *)
+	  oldFileNameLength = 8; 	(* DOS compatibility    *)
+
+    PROCEDURE GpCreateFile(	base : ARRAY OF CHAR;
+				ext  : ARRAY OF CHAR;
+			    VAR name : ARRAY OF CHAR;
+			    VAR file : File);	(* NIL if can't create *)
+    (*		Truncate base name at fileNameLength.    *)
+    (*		If ext <> "" then a dot and the ext are  *)
+    (*		appended, otherwise the base unchanged.  *)
+    (*		Name is then made lower case unless the  *)
+    (*		env variable GPNAMES has first character *)
+    (*		"m" or "M" at module initialization time *)
+    (*  post : name is the name of the created file	 *)
+
+    PROCEDURE GpFilename(	base : ARRAY OF CHAR;
+				ext  : ARRAY OF CHAR;
+			    VAR name : ARRAY OF CHAR);
+    (*		Truncate base name at fileNameLength.    *)
+    (*		If ext <> "" then a dot and the ext are  *)
+    (*		appended, otherwise the base unchanged.  *)
+    (*		Name is then made lower case unless the  *)
+    (*		env variable GPNAMES has first character *)
+    (*		"m" or "M" at module initialization time *)
+    (*  post : name is the name of the created file	 *)
+
+    PROCEDURE GpFindLocal(	base : ARRAY OF CHAR;
+				ext  : ARRAY OF CHAR;
+			    VAR name : ARRAY OF CHAR;
+			    VAR file : File);	(* or NIL if not found *)
+    (*		Look for file in current directory ...	 *)
+    (*		If ext <> "" then look for "base.ext",	 *)
+    (*		else look for the file "base"		 *)
+    (*  post : name is the name of the file, if found in *)
+    (*		the current directory, else file = NIL   *)
+
+    PROCEDURE GpFindOnPath(	path : ARRAY OF CHAR;
+				base : ARRAY OF CHAR;
+				ext  : ARRAY OF CHAR;
+			    VAR name : ARRAY OF CHAR;
+			    VAR file : File);	(* or NIL if not found *)
+    (*		Look for file first in current directory, *)
+    (*		then on the given path.			  *)
+    (*		If ext <> "" then look for "base.ext",	  *)
+    (*		else look for the file "base"		  *)
+    (*		Actual "name" must be long enough for the *)
+    (*		longest possible path name!		  *)
+    (*  post : name is the pathname of the file, if 	  *)
+    (*		file found, else file = NIL		  *)
+
+END GpFiles.
+

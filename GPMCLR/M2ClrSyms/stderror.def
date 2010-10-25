@@ -1,0 +1,30 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+FOREIGN DEFINITION MODULE StdError;
+   IMPORT IMPLEMENTATION FROM  "M2clrRts";
+
+(* These procedures are identical to the procedures from module Terminal
+ * with the same names, except that output goes to the standard UNIX 
+ * error stream "stderr"
+ *)
+
+  PROCEDURE WriteString(str : ARRAY OF CHAR);
+
+  PROCEDURE WriteLn;
+
+  PROCEDURE WriteCard(card  : CARDINAL; width : CARDINAL);
+
+  PROCEDURE Write(ch : CHAR);
+
+END StdError.
