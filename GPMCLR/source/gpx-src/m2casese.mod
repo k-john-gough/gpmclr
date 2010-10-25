@@ -157,7 +157,9 @@ IMPLEMENTATION MODULE M2CaseSelectors;
 	  str[wi].cas := casPtr;
 	END;
 	CUT(str,wi);
-        IF superVerbose IN modState THEN DiagString(str) END;
+        (* 
+         *  IF superVerbose IN modState THEN DiagString(str) END;
+         *)
       END Compress;
 
       PROCEDURE Partition(str : CaseString; prt : PartString);
@@ -210,7 +212,9 @@ IMPLEMENTATION MODULE M2CaseSelectors;
 	  END;
    (* $T= *)
 	END;
-        IF superVerbose IN modState THEN DiagPartition(str,prt) END;
+        (*
+         *  IF superVerbose IN modState THEN DiagPartition(str,prt) END;
+         *)
       END Partition;
 
 PROCEDURE StdErrorWriteInt(i : INTEGER);
