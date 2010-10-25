@@ -1,0 +1,40 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+(* !LIBRARY! *) DEFINITION MODULE Random;
+(*
+  Random number generator.
+  Uses the 'Minimal standard random number generator' described by
+  Park & Miller, CACM 31,10,Oct 88 p1192. The code has been checked
+  for the 10001st random as specified in Park & Miller p1195.
+
+  This version returns a REAL randomly distributed in the closed range
+  [0.0,1.0], and will be correct if the real mantissa is 46 bits
+  or larger (including sign bit). The sequence is guaranteed to produce
+  all values of the form n/m for n = 0 to m, where m is 2147483646
+  (=2**31-2), before cycling.
+*)
+
+PROCEDURE InitRandom (seed : REAL);
+(* Initialise the random number generator with the given seed.		*)
+(* The seed should be in the range [1.0,2147483646.0] - values outside	*)
+(* this range are clamped to the extreme values.			*)
+(* If InitRandom is not called, the system clock is used to initialise	*)
+(* the sequence; thus InitRandom must be called to create a		*)
+(* reproducible sequence.						*)
+(* InitRandom may be called as often as needed.				*)
+
+PROCEDURE Random() : REAL;
+(* Return the next pseudo-random number in the closed range [0.0,1.0]	*)
+
+END Random.

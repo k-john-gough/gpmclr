@@ -1,0 +1,43 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+FOREIGN DEFINITION MODULE PcProcesses;
+
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";  (* in m2rts for CLR version *)
+
+  FROM Types IMPORT SHORTINT;
+  FROM SYSTEM IMPORT ADDRESS;
+  IMPORT BuildArgs;
+
+  PROCEDURE Spawns(comPath : ARRAY OF CHAR;
+		   argStrn : ARRAY OF CHAR) : SHORTINT; 
+  (* Spawns another process, and waits for return result *)
+  (* comPath is an absolute pathname, with extension.    *)
+  (* argStrn is the additional arguments of the command  *)
+  (* Arg-0 of command is comPath, others from argStrn.   *)
+  (* Result is exit code of the spawned process		 *)
+
+  PROCEDURE Spawnv(comPath : ARRAY OF CHAR;
+		   argvBlk : BuildArgs.ArgPtr) : SHORTINT; 
+  (* Spawns another process, and waits for return result *)
+  (* Arg-0 of command is comPath, others from argbBlk.   *)
+  (* Result is exit code of the spawned process		 *)
+
+  PROCEDURE System(command : ARRAY OF CHAR) : SHORTINT; 
+  (* Spawns another copy of the command processor as     *)
+  (* specified by the environment variable COMSPEC, this *)
+  (* executes the command. Returns non-zero on failure   *)
+
+  PROCEDURE PSP() : ADDRESS;
+
+END PcProcesses.

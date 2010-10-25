@@ -1,0 +1,33 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*		  Parser and Tree Constructor.			*)
+(*								*)
+(* (c) copyright 1994 QUT Faculty of Information Technology 	*)
+(*								*)
+(*	original module : kjg November 1994			*)
+(*	modifications   :					*)
+(*								*)
+(****************************************************************
+$Log: m2gdbsup.def,v $
+Revision 1.1  1994/11/15 04:41:25  gough
+Initial revision
+
+*****************************************************************)
+
+
+DEFINITION MODULE M2GdbSupport;
+  IMPORT M2NodeDefs;
+
+  CONST
+    m2_int  = 1;  c_char  = 2;  m2_crd  = 3;  m2_bool = 4;  c_void  = 5;
+    c_vstar = 6;  ieeeFlt = 7;  ieeeDbl = 8;  m2_proc = 9;  m2_char = 11;
+    m2_byte = 12; m2_word = 13; m2_set  = 14; m2_adr  = 15;
+
+  PROCEDURE EmitInitialTypes;
+  PROCEDURE EmitObject(id : M2NodeDefs.IdDesc);
+  PROCEDURE EmitTypeDef(type : M2NodeDefs.TypeDesc);
+  PROCEDURE EmitLocal(type : M2NodeDefs.TypeDesc; isVar : BOOLEAN);
+
+END M2GdbSupport.

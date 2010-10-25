@@ -1,0 +1,55 @@
+
+FOREIGN DEFINITION MODULE SysClock;
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+
+(* Facilities for accessing a system clock that records the date and time of day *)
+
+
+  FROM Types IMPORT Card32;
+  (* For portability all GPM implementations store DateTime.year in 32 bits *)
+
+  CONST
+   maxSecondParts = 0;  (* implementation defined constant *)
+   (* The value here implies the clock delivers only whole seconds *)
+  
+  TYPE
+   Month    = [1 .. 12];
+   Day      = [1 .. 31];
+   Hour     = [0 .. 23];
+   Min      = [0 .. 59];
+   Sec      = [0 .. 59];
+   Fraction = [0 .. maxSecondParts];	(* parts of a second *)
+   UTCDiff  = [-780 .. 720];		(* Time zone Differential Factor *)
+(* the number of minutes that must be added to local time to obtain UTC. *)
+
+   DateTime =
+     RECORD
+       year     : Card32;
+       month    : Month;
+       day      : Day;
+       hour     : Hour;
+       minute   : Min;
+       second   : Sec;
+       fractions: Fraction;
+       zone     : UTCDiff;
+       SummerTimeFlag : BOOLEAN;  (* interpretation: local usage *)
+    END;
+  
+  PROCEDURE CanGetClock () : BOOLEAN;
+  (* Tests if a clock can be read *)
+  
+  PROCEDURE CanSetClock () : BOOLEAN;
+  (* Tests if a clock can be set *)
+  
+  PROCEDURE IsValidDateTime (userData : DateTime) : BOOLEAN;
+  (* Tests if the value of userData is a valid *)
+  
+  PROCEDURE GetClock (VAR userData : DateTime);
+  (* Assigns local date and time of day to userData *)
+  
+  PROCEDURE SetClock (userData : DateTime);
+  (* Sets the system clock to the given local date and time *)
+
+  PROCEDURE DateTimeFromUnixTime(uxt : CARDINAL; VAR res : DateTime);
+  
+END SysClock.

@@ -1,0 +1,90 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE DebugWrite;
+(*
+ * Simplified interfaces to typical debug write formats.
+ *
+ * Each has a string initial parameter, which should be used to explain
+ * what the value is and/or the position in the code.
+ * The standard signature is "# [DebugWrite: ]"
+ * Special cases are translated to ensure readability.
+ * All output is to StdError.
+ *)
+
+FROM SYSTEM IMPORT BYTE;
+
+PROCEDURE DebugOn;
+(*
+ * Enable DebugWrite output (this is the default)
+ *)
+
+PROCEDURE DebugOff;
+(*
+ * Disable DebugWrite output
+ *)
+
+PROCEDURE DC(*DebugWriteChar*) (heading : ARRAY OF CHAR; char : CHAR);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then ch if printable, else its hex equivalent.
+ *)
+
+PROCEDURE DCa(*DebugWriteCardinal*) (heading : ARRAY OF CHAR; card : CARDINAL);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then card in minimum field width.
+ *)
+
+PROCEDURE DI(*DebugWriteInteger*) (heading : ARRAY OF CHAR; int : INTEGER);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then int in minimum field width.
+ *)
+
+PROCEDURE DR(*DebugWriteReal*) (heading : ARRAY OF CHAR; real : REAL);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then real in full precision - fixed point if within whole number range,
+ * floating point otherwise.
+ *)
+
+PROCEDURE DB(*DebugWriteBoolean*) (heading : ARRAY OF CHAR; boolean : BOOLEAN);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then "TRUE" or "FALSE".
+ *)
+ 
+PROCEDURE DAll (heading : ARRAY OF CHAR; VAR value : ARRAY OF BYTE);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then 8 bytes starting at beginning of value in all formats.
+ *)
+
+PROCEDURE DDump (heading : ARRAY OF CHAR; value : ARRAY OF BYTE; size : CARDINAL);
+(*
+ * Write signature, heading, followed by ":" if not empty,
+ * then size bytes starting at beginning of value in hexadecimal.
+ *)
+
+PROCEDURE DW(*DebugWriteLn*);
+(*
+ * WriteLn
+ *)
+
+PROCEDURE DS(*DebugWriteString*) (string : ARRAY OF CHAR);
+(*
+ * Write signature, string, ":".
+ *)
+
+END DebugWrite.

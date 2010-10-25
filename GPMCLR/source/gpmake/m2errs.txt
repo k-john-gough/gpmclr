@@ -1,0 +1,1100 @@
+Errors defined in gardens point modula
+  1 Line ends inside literal string
+Literal strings are limited to a single line. Commonly, this error is due
+to omission of the closing quote (which must match the opening quote --
+either ' or "). If you wish to construct literal strings longer than editor
+or system line length limits, you must do so by programmed concatenation.
+\
+  2 Illegal character in input file
+All characters within the Modula character set are acceptable, and control 
+characters in the range 1C to 37C are ignored. Other characters are invalid. 
+If there is no apparent invalid character, use your text editor's "show 
+non-printable characters" option or some dump utility to check for spurious 
+characters.
+\
+  3 Input file ends inside a comment
+This error will occur if a closing comment bracket is omitted. Note that
+comments nest in Modula, so that a subsequent closing bracket will match
+only its corresponding opening bracket; note also that an intervening 
+space between the '*' and the ')' characters will destroy a comment bracket.
+Since end-of-file is indicated by a null character (0C), this error will 
+also occur if a null is introduced within a comment.  The error is reported 
+at the beginning of the unclosed comment.
+\
+  4 Invalid exponent in REAL constant
+Immediately after the 'E' which introduces a real exponent, there must
+follow an optional sign, and then an unsigned integer.
+\
+  5 Illegal character in numeric constant
+Numeric constants may contain only --
+	the digits 0..7 for octal constants (suffix B or C), 
+	digits 0..9 for decimal (no suffix), 
+	or 0..9,A..F for hexadecimal (H suffix).
+\
+  6 Floating-point error during constant evaluation
+The error value "HUGE" was produced when this constant was evaluated. 
+See the machine reference manual for floating-point limits.
+\
+  7 Number too long
+Numeric constants are assembled in a buffer which is currently more than
+large enough for the number of significant digits in a double-precision 
+floating point value.
+\
+  8 Character constant too large (377B is maximum)
+\
+  9 Illegal use of underscore in identifier
+Underscores are allowed in identifiers only singly and internally -- a
+leading or trailing underscore is not allowed; nor are two or more adjacent
+underscores.
+
+These rules are relaxed in interface definition modules, or in any 
+modules which import such modules. In that case, the use of underscores 
+is entirely free, and error 9 should not arise.
+\
+100 Invalid symbols preceed start of module
+\
+101 No identifier at end of module
+\
+102 No fullstop at end of module
+\
+103 Expected END symbol
+\
+104 Expected module END symbol
+\
+105 Expected semicolon
+\
+106 Expected declarations
+\
+107 Expected equals sign
+\
+108 Expected identifier
+\
+109 Expected IMPORT symbol
+\
+110 Expected comma
+\
+111 Expected ')' symbol
+\
+112 Expected '..' symbol
+\
+113 Error in qualified identifier
+\
+114 Expected parameters
+\
+115 Expected ']' symbol
+\
+116 Expected OF symbol
+\
+117 Expected colon
+\
+118 Formal parameter bad
+\
+119 Expected '{' symbol
+\
+120 Error in expression
+\
+121 Expected '(' symbol
+\
+122 Expected '}' symbol
+\
+123 Expected '|' symbol
+\
+124 Expected EXPORT symbol
+\
+125 Expected selectors
+\
+126 Expected addops
+\
+127 Expected mulops
+\
+128 Error in statement
+\
+129 Expected DO symbol
+\
+130 Expected UNTIL symbol
+\
+131 Expected ':=' symbol
+\
+132 Expected TO symbol
+\
+133 Expected THEN symbol
+\
+134 Expected start of type
+\
+135 Expected start of factor
+\
+136 Expected BEGIN
+\
+137 Premature exit: too few ENDs in  block
+\
+138 Expected END identifier;
+\
+139 Resynchronizing here
+gpm uses the names at the end of procedures and modules to help in recovery 
+from errors which are due to too many or too few ENDs.  In the case that the 
+'END identifier' is found too soon, gpm abandons parsing the rest of (possibly 
+nested) statement sequences and issues error 137. 
+
+If an END is found but the expected identifier is missing then error 138 is 
+emitted and gpm searches for an END with the matching identifier. This search 
+will stop at the start of any new declaration, so that a simple omission of 
+the identifier will not cause any information to be skipped. However, if there 
+are too many ENDs gpm will find the matching one, and issue "error" 139 to 
+announce that it has found the correct resynchronization point.
+\
+140 Foreign import must be 'IMPORT IMPLEMENTATION FROM litstring'
+The allowed format for litstrings is exactly the usual Modula format. If the
+internal structure of the litstring is erroneous, this will cause an error
+at build time.
+\
+200 Identifier at block end does not match
+Modula requires that the END of a module (compilation unit, or nested module) 
+or procedure be followed by the name of the module or procedure.  Either you 
+have omitted the matching identifier, or mis-spelt it, or perhaps incorrect 
+pairing of ENDs with structures has misled the compiler? 
+(Errors 137 -- 139 should catch most incorrect pairings) 
+\
+201 Symbol file missing
+You have tried to import from a definition module, and its symbol file was
+not found. The import may be explicit, or the implicit import of its own
+definition module by an implementation module.  
+	Is the module name spelt correctly? 
+	Has the definition module been compiled? 
+	Is it in the current path? 
+	Do you have read access to it?
+\
+202 Identifier is not exported from module
+You have tried to IMPORT a particular identifier from a definition module;
+the module's symbol file was found, but that identifier was not exported.
+Is it spelt correctly (or at least the same way -- Modula is case sensitive). 
+Is it defined in that definition module?
+(Quick check: "grepdef identifier" will find the identifier no matter which 
+   file it is in, or what directory on the search path the file may be in).
+\
+203 Identifier already known in this scope
+You are trying to define a new object, and the name used already has some
+other meaning in the current scope.  It may have been IMPORTed from some 
+external scope, or declared previously in this scope, or is being EXPORTed 
+from the current scope and clashes with a name in the enclosing scope ("this 
+scope" is then the enclosing scope).  If you wish to use a similar name, 
+Modula's case-sensitivity may be used to distinguish them; but beware of 
+confusion later -- two variables of the same type, distinguished only by 
+case, could easily be confused; on the other hand, two variables of different 
+type, or a type and a variable, would almost certainly cause a compiler error 
+if accidentally transposed.
+\
+204 Identifier not known in this scope
+You are using an identifier which has no definition visible in this scope. 
+Did you mis-spell, or fail to IMPORT?  Remember that although global objects 
+are visible by default in nested procedures, nothing is visible across module 
+boundaries unless explicitly exported and/or imported. If you are trying to 
+IMPORT into a nested module from a module which is not visible in the 
+enclosing scope, "this scope" means that enclosing scope. 
+\
+205 Qualified identifier is not a type name
+In a situation where the syntax requires the name of a type, the identifier
+you have used is known, but is not a type name.  Could it be a mis-spelt name 
+matching another identifier? Or did you forget that a type is required here?
+\
+206 Type is not an ordinal type
+An even more restricted version of error 205 -- the type must be ordinal. That 
+is, it must be a type for which the next "counting" or "successor" value is
+defined. This allows CARDINAL, INTEGER, BOOLEAN, CHAR, a user-defined 
+enumeration, or a subrange of one of those; REALs or any structured type 
+(arrays, records, sets) are not allowed. Ordinal types are required for CASE 
+statement selectors, array indices, variant record tag types, FOR loop control 
+variables, and arguments of CHR, ODD, ORD, INC & DEC. 
+\
+207 Expression is not compatible with declared type
+Modula enforces strict agreement between types of expressions and the context 
+in which they are used. This error occurs if a label of a CASE statement 
+branch does not match the selector type, an element in a set constructor does 
+not match the set type, a bound of a subrange does not match the host type or 
+the other bound, a record variant label does not match the tag type, or an 
+array index does not match the index type.
+\
+>The expected type was <
+while the actual type was >
+\
+208 Identifier is not a constant
+The syntax requires a constant here.  Did you mis-spell the identifier?
+\
+209 Maximum of range is less than minimum
+Where a range a..b is allowed, a should be the lower bound and b the upper;
+the range is from a up to b, inclusive.
+\
+210 Implementation limit exceeded for set base type
+gpm, like most compilers, puts a limit on the size of sets by restricting
+the range of the base type; for gpm, the limit is 256 members, starting at
+ordinal 0.  Note that this means some small sets may cause this error --
+a SET OF [1980..1999] has 2000 possible members, not just 20; also a 
+SET OF [-5..5] would breach the lower range limit.  If necessary, you can 
+work around these limitations by defining your own HugeSet or NegativeSet 
+types, implemented as ARRAY OF BITSET, and mapping members of your desired 
+set type to members of elements of the array. (Future releases will relax 
+this constraint, in line with ISO recommendations)
+\
+211 Target of forward reference not declared
+Modula generally expects that identifiers be declared before use, but
+there are exceptions: the target type of a pointer (Fred in POINTER TO Fred),
+the formal parameter and result types of a procedure type, and procedure
+names. These names must be subsequently declared within that compilation
+unit. Because of different internal processing of types and procedure names,
+gpm reports the two cases differently. Error 211 reports incomplete type
+definitions, at the point where it becomes clear that no definition can
+appear.  Error 204 occurs for missing procedures. 
+\
+212 Type ident not expected here
+In an expression which is required by the syntax to have a constant value,
+the only type identifier which can occur is that of a set (giving the type
+of a set constant).
+\
+213 Function HIGH cannot be used in a constant expression
+Since HIGH always returns a value which varies with the actual parameter
+corresponding to an open array formal parameter, it cannot be used in an
+expression which is required to have a constant value.
+\
+214 Parameter is of wrong type
+This actual parameter does not match the type required by the formal
+parameter in the procedure declaration. This includes built-in functions
+such as ABS, CAP & CHR.
+-- or --
+This argument to a built-in procedure or function is not a variable or type
+designator.
+\
+215 Range of type exceeded
+A value which can be checked at compile-time has been found to be out of 
+range. These include constant arguments to built-in procedures and functions,
+the results of evaluating constant expressions, set elements, and record
+variant labels.  In some cases, error 207 may be reported instead of error 215 
+-- for example a CASE statement selector is of CARDINAL subrange type, and so 
+a negative branch label is rejected as incompatible (which, of course, implies 
+out of range).
+\
+216 Too many parameters
+You have supplied too many parameters for the procedure called.  Check the 
+definition: in the documentation for built-in procedures, in the definition 
+module for external procedures, or in this module for local procedures.
+\
+217 Conversion not implemented
+(not used anymore)
+\
+218 Type is not an ordinal or numeric type
+VAL requires that the first parameter denotes an ordinal or numeric type and
+that the type of the expression be ordinal or numeric.  Other restrictions
+apply and violation of these give a warning 510.
+\
+219 Operation invalid on constant
+This operation is not appropriate for the constant operand supplied.
+Check the (implied) type of the constant, and that of the other operand,
+for consistency with one another and the operator. There is also the case
+of a specific value of the operand being inappropriate -- division by zero.
+\
+220 Type incompatible operands
+In general, operators combine operands of the same types; exceptions such
+as the set membership operator IN still require compatibility between the
+element being tested for membership and the base type of the set.
+
+Note that if this error occurs, no check is made for the appropriateness of
+the operator; on correcting the operand incompatibility, an inappropriate
+operator will give an error such as 270 -- 275.
+\
+>The left hand expression type was < 
+the right hand expression type was >
+\
+221 Not of Boolean type
+The operand of the Boolean operator NOT must be Boolean; so too must the
+conditions which are used in IF, WHILE and REPEAT statements.
+\
+222 Record field name is not unique
+Within a single record, each field must have a distinct name; this includes
+the tag field of a variant, and each of the variant fields. Fields of other
+records (including records which are the types of fields of this record)
+may of course re-use the same names, since qualification by their variable
+or field name prevents an ambiguity.
+\
+223 Opaque type only allowed in definition part
+Opaque types are intended to provide an exported declaration which allows 
+limited access to the type while hiding other details; they are thus 
+allowed only in DEFINITION modules. Note that this implies a 
+limitation on nested modules -- they cannot export opaquely. 
+\
+224 Opaque type not elaborated
+An opaque type declared in a DEFINITION module must be elaborated -- its
+hidden details completed -- in the corresponding IMPLEMENTATION 
+module. This message is at the end of the implementation part, since it is
+now clear that there can now be no declaration of the type in this scope.
+The name of the undeclared type is quoted here.
+
+Note that references to variables of the opaque type within the code of 
+the IMPLEMENTATION module will not have caused errors, since the elaboration 
+check error on the first pass suppresses further semantic checking. 
+\
+225 Exported procedure not declared
+This is a similar instance to error 224, except that the object partially
+declared in the DEFINITION module and not completed in the IMPLEMENTATION
+module was a procedure. You must supply the procedure body in the
+IMPLEMENTATION module.
+\
+226 (Implementation restriction) Too many formals of same type
+In a parameter list of the form "(a,b,c,d:SomeType)" there can only be 15
+items in the list of parameters all sharing the same type SomeType. You
+can easily circumvent the limit by splitting the list into two:
+	"a,b,c,...,o:SomeType; p,q,...,u:SomeType)"
+\
+227 Invalid elaboration of opaque type (must be a pointer)
+An opaque type must turn out to be a pointer; if you want something else,
+you must define a pointer to it and opaquely export the pointer type.
+\
+228 Invalid elaboration of procedure header
+The definition of a procedure in a DEFINITION module and its subsequent
+elaboration in the IMPLEMENTATION module must have the same headings. This
+error occurs if a parameter does not match in type and mode of passing 
+(VAR or value), or if the DEFINITION specified a function and the 
+IMPLEMENTATION was a proper procedure (no result type). In the case of a 
+parameter mismatch, the name of the offending parameter in the IMPLEMENTATION 
+module is quoted.  (Note that the parameter names used in DEFINITION and 
+IMPLEMENTATION need not match, only their types and modes.)
+
+Exactly the same rules apply for the elaboration of procedures which have been 
+declared with the FORWARD keyword. Remember that forward declarations are not 
+required for gpm. The keyword is only recogized in order to provide source code
+compatability with those Modula compilers which have single-pass restrictions.
+\
+229 Function return type not as defined
+The elaboration of a function in an IMPLEMENTATION module specifies a
+different result type from the DEFINITION module.
+\
+230 Exported object not declared
+A local or nested module has exported a name, and that name has not been
+declared within the module. The name of the undeclared object is quoted above.
+It is now too late for a declaration of the object in this block.
+\
+231 Too many constants in enumeration
+There is an implementation limit of 255 values in an enumeration type.
+If you need more (!), you will have to use a CARDINAL subrange to represent
+them, and take appropriate care to avoid using CARDINAL operations which
+would be meaningless on the enumeration.
+\
+232 Designator is not a record type
+A WITH statement allows shorter references to record fields by implicitly
+prefixing all relevant identifiers with that field name; clearly, the name
+following WITH must be the name of a variable of record type (it may be a
+complex reference, such as a.b[c].e[f], but the end result must be a record).
+\
+233 Fieldname not known for this type
+In the syntax a.b, a is a record variable name, but b is not a field of
+that record type.
+\
+234 Attempted field selection not on a record structure
+In the syntax a.b, a has been determined not to be a module name; however, 
+it is also not a variable of record type, so that the apparent selection of 
+field b is invalid.
+\
+235 Designator is not a variable
+There are various places where an object must be a variable: on the left-hand 
+of an assignment; as the control variable of a FOR loop; anywhere where 
+subscripting, field selection or dereferencing is performed; as the 
+prefixing object of a WITH statement.
+\
+236 Attempted pointer dereference not on a pointer type
+Clearly, only pointers can be dereferenced ^ -- that is, variables whose
+type is POINTER TO something or ADDRESS.
+\
+237 Attempted array index not on an array type
+Only arrays can be subscripted ([]).
+\
+238 BY expression not within INTEGER value range
+The expression which gives the step between successive values of a FOR loop
+control variable must take INTEGER values; this is the number of values
+'forward' or 'backward'. Even in the case of control variables of type
+CHAR, or some enumerated type, etc., the step must be the INTEGER number of
+values. A large CARDINAL (value >  MAX(INTEGER)) is also unacceptable. 
+\
+239 Control variable not found in local scope
+Good (structured) programming practice suggests that the control variable
+of a structured statement such as a FOR loop should be declared locally --
+i.e. in the procedure whose body contains the loop. Modula enforces this
+good practice. This error occurs if the control variable is relatively
+global to the procedure.
+\
+240 Control variable must not be a formal parameter
+Continuing on from error 239: one way in which the control variable could be
+a local name for a non-local object is via the parameters. Modula forbids
+even the use of a value parameter as a control variable.
+\
+241 Control variable must not be imported or exported
+Another way of making an external variable appear local, and thus avoiding
+errors 239 & 240, is to IMPORT it from an enclosing module, or have it
+EXPORTed by a nested module. Both of these are also unacceptable as FOR 
+loop control variables.
+\
+242 Selectors not permitted on constant
+This constant cannot be selected by the method which you have attempted.
+\
+243 Selectors not permitted on procedure name
+Procedure variables are unstructured -- you cannot 'select' a component by
+array indexing, record field extraction or pointer dereferencing.
+\
+244 Standard procs are not valid as proc-values
+It is a rule of the language that standard procedures may not be assigned
+as values of procedure variables. You can work around this restriction by
+declaring a procedure whose sole purpose is to call the standard procedure;
+since it is user-defined, it may be assigned to procedure variables. Note
+that the user-defined procedure must be declared in the module scope, not
+within any procedure, to conform with Modula's other restriction on
+procedure variable values (see error 287).
+\
+245 Function name not known in this scope
+An object which appears to be a function call (e.g. b in "a := b(..)") is not 
+declared in, or IMPORTed or EXPORTed into this scope or any enclosing scope. 
+\
+246 Designator is not a function
+An object which appears to be a function call is known to be some other
+type (including a proper procedure).
+\
+247 Constructors are not defined for this type
+An object which appears to be a constructor designator e.g. T{...} begins with
+an identifier (T in the example) for which constructors are not permitted.
+\
+248 Too few parameters
+A procedure or function call does not have as many parameters as required
+by the procedure or function declaration.
+\
+249 Designator is not a procedure name
+An object which appears to be a procedure call e.g. P(...); is not. 
+It may be a function, or some other type.
+\
+250 Designator is not a procedure variable name
+A variable used in the style of a call to a procedure variable
+e.g. P(...); is not a procedure variable.
+\
+251 Missing function return expression
+A function procedure has no RETURN statement and so cannot return a result. 
+\
+252 Proper procedure cannot return a value
+The RETURN statement in a proper procedure should not specify a return value; 
+proper procedures return values only via VAR parameters, while function 
+procedures should return a single result.
+\
+253 Actual value parameter is not assignment compatible with formal
+Since a formal value parameter is treated as a local variable to which the
+value of the actual parameter is assigned at procedure entry, the same
+compatibility rules as for assignment statements apply.
+Some special cases: 
+ * the second parameter of INC and DEC must be assignment compatible with 
+   either INTEGER or CARDINAL, depending on the type of the first parameter; 
+ * the second parameter of ROTATE and SHIFT must be assignment compatible 
+   with INTEGER. 
+
+Assignment compatibility is defined as follows --
+ * identical types are compatible;
+ * INTEGER and CARDINAL are compatible;
+ * a subrange is compatible with its host type;
+ * strings are compatible with string variables of equal or greater length.
+\
+>The formal parameter type was <
+the actual parameter type was >
+\
+254 Actual variable parameter type not identical to formal
+Since a formal variable parameter allows direct access to the corresponding
+actual parameter, the compatibility requirements are strict -- actual and
+formal must be of identical type. Note that identical means the same named type
+-- it is name equivalence which is required, not just structural equivalence.
+\
+>The formal VAR param type was >
+the actual variable type was <
+\
+255 Actual variable parameter must be a variable
+Since an actual variable parameter may be altered by a procedure, it must
+be a variable. Constants could not be altered, and expressions have no
+memory location to hold the updated value.
+
+Also returned if the argument of ADR is not a variable.
+\
+256 Actual parameter corresponding to open array formal not an array
+With the exception of the universally conformable ARRAY OF WORD and 
+ARRAY OF BYTE, open array parameters are compatible only with actual 
+parameters which are arrays of the appropriate type.
+\
+257 Incompatible open array element type
+An open array formal parameter has an actual which is an array, but of the
+wrong element type.
+\
+258 Expression not assignment-compatible with variable
+Assignment compatibility is required in an actual assignment statement, and
+also between the initial value of a FOR loop and the control variable, and
+between the elements of constructors and the declared element types.
+
+Assignment compatibility is defined as follows --
+ * identical types are compatible;
+ * INTEGER and CARDINAL are compatible;
+ * a subrange is compatible with its host type;
+ * strings are compatible with string variables of equal or greater length.
+\
+>The type of the variable was < 
+the type of the expression was >
+\
+259 Return value not assignment-compatible with function type
+The value RETURNed by a function procedure must be assignment compatible
+(see error 258) with the declared result type of the function.
+\
+>The declared return type was <
+The return expression type was >
+\
+260 Designator is not a function variable name
+A variable used in the style of a call to a function variable
+e.g. b in a := b(...); is not a function variable.
+\
+261 Selectors not permitted on set type name
+Components of set variables cannot be "selected" by array indexing,
+record field extraction or pointer dereferencing.
+\
+262 HIGH may only be applied to open array parameters
+The built-in function HIGH applies only to open array formal parameters.
+For normal array parameters, the upper bound is known from the type using
+MAX(IndexType). If general size information is required, the SIZE or TSIZE
+functions should be used.
+\
+263 Expression is not of type CHAR
+The operand of standard function CAP must be CHAR.
+\
+264 Name of qualifying module clashes in outer scope
+The name of this nested module, which is visible in the enclosing scope,
+has already been used there for some other purpose.
+\
+265 Enumeration constant name clashes in this scope
+This enumeration value name has already been used in the current scope.
+Note that the error message quotes the offending name in the case where 
+only the enumeration type name was explicitly imported, but the resulting
+import of each of the value names caused the conflict.
+\
+266 Name clashes with an enumeration constant name
+This is a more specific version of error 203: the name you have used is
+already used in this scope, as the name of a value of an enumeration type.
+Since it is easy to overlook enumeration names, this specific error
+highlights the problem. The clashing name may also have entered the scope 
+by importation of its type name.
+\
+267 Duplicate case selector in this range
+Each case branch selector must occur only once, so that the statements to
+be performed are uniquely determined. Have you included this value in a
+range, as well as this occurrence?
+\
+268 Operand not of signed numeric type
+The arithmetic negation operator (unary or prefix minus) can only be
+applied to operands which are of signed type; it is illegal on a CARDINAL
+operand, or any non-numeric operand. Note that binary or infix minus may be
+applied to CARDINAL operands; thus for CARDINAL a and b the expression 
+a-b is valid, while -b+a is not.
+\
+269 Operand(s) not of Boolean type
+The single operand of NOT, or either operand of AND or OR, must be Boolean.
+\
+270 Operand(s) not of numeric type
+Arithmetic operators apply only to numeric operands.
+\
+271 Operand(s) not of whole number type
+The operators DIV, MOD, REM and '/' apply only to INTEGER or CARDINAL 
+operands, implementing whole number arithmetic.
+\
+272 Operand may not be compared
+Structured types such as arrays and records cannot be compared. Given your
+understanding of the elements of the structure, you must write an appropriate 
+Compare procedure.
+\
+273 Proper inclusion operator not defined for sets
+Only <= and >= inclusion operators are defined for sets. If you wish to test 
+for proper inclusion, replace (a < b) by ((a <= b) AND (a <> b)).
+\
+274 This type may only be compared for (in)equality
+The only comparison operators defined for types ADDRESS, WORD, BYTE,
+POINTER TO ..., PROCEDURE, and opaque types are '=' and '<>'. If you believe
+a meaning can be attached to other comparisons, you must first coerce or
+cast to an arithmetic type, on which those operations are allowed.
+\
+275 Right operand or first parameter not of set type
+The set membership operator IN tests member IN set; thus the right operand 
+must be of some set type. The built-in include and exclude procedures
+INCL and EXCL have parameters (set, member); thus the first parameter 
+must be of some set type.
+\
+276 Exported enumeration constant clashes in outer scope
+Another variation of the problem reported by error 265: when you export an
+enumeration type you also export the name of each value of the type. One of
+those names has already been used in the scope into which you are exporting
+the type.
+\
+277 Procedure in !LIBRARY module calls non-library procedure
+A module with the !LIBRARY pragma assures the compiler that it does not
+perform direct or indirect recursion, thus allowing the compiler to make
+optimizations. This assurance is invalidated if a procedure in the module
+calls a procedure in another module and that other module does not
+guarantee the !LIBRARY attribute.
+\
+278 EXIT not within a LOOP
+The EXIT statement exits from the nearest enclosing LOOP statement, 
+continuing execution with the statement after the LOOP. This EXIT statement 
+is not within any LOOP.
+\
+279 FOR loop control variable may not be modified
+Consistent with its use as the control of a count-controlled loop, a FOR
+loop variable may not be modified. Thus, it may not be assigned a value, or
+passed as a variable parameter to a procedure which could then modify it.
+If you wish to pass the value of the control variable as a VAR parameter,
+copy it to another variable.
+\
+280 Name is not a module name
+The name from which you have tried to IMPORT is known, but is not an
+external module name.
+\
+281 Expected proper procedure, not function
+The definition of this procedure specified that it was a proper procedure
+(i.e., not a function procedure). The implementation conflicts by specifying 
+a function result type.
+\
+282 ALLOCATE not known in this scope
+A call to NEW is treated as a call to ALLOCATE, with the appropriate size.
+There is no visible ALLOCATE -- probably because it was not imported from 
+Storage, though a compatible local ALLOCATE procedure will suffice. 
+\
+283 DEALLOCATE not known in this scope
+A call to DISPOSE is treated as a call to DEALLOCATE, with the appropriate 
+size. There is no visible DEALLOCATE -- probably because it was not imported 
+from Storage, though a compatible local DEALLOCATE procedure will suffice. 
+\
+284 Not a valid substitution for NEW or DISPOSE
+The ALLOCATE or DEALLOCATE procedure used to implement NEW or DISPOSE must
+be of the form PROCEDURE(VAR ADDRESS, CARDINAL).
+\
+285 Type ranges do not overlap at all
+In checking assignment compatibility and the need for range checking, the
+special case of a complete mismatch of two subranges causes this error.
+\
+286 Selectors not permitted on type identifier
+Types cannot be "selected" by array indexing, record field extraction or
+pointer dereferencing. Only variables of the appropriate structured types
+can be so selected, leading to components of those variables.
+\
+287 Nested procedures are not valid as proc-values
+It is a language restriction that procedures assigned to procedure
+variables must be declared at the module level; i.e., they cannot be
+declared within procedures. (Actually, they must be at the outer level of 
+a static module, that is one not nested within a procedure.)
+\
+288 Implementation restriction: case range too large
+The implementation restriction on the range of case labels from smallest to
+largest is 1024. If you wish to use a larger range, IF statements to select
+appropriate ranges can be used, and are likely to be more compact.
+\
+289 Duplicate identifier in export list of module
+This identifier being exported has already been mentioned in the export list.
+\
+290 Actuals passed to amorphous formals must be simple
+Amorphous open array formal parameters (i.e. ARRAY OF WORD or 
+ARRAY OF BYTE) will accept almost any actual parameter; however, there 
+are some restrictions imposed by the implementation. Any variable is ok; 
+expressions in general are not. Some special non-variables are allowed: 
+string constants (including single characters), set constants, and set 
+expressions which occupy more than a word and so are held in temporary 
+variables. 
+
+If you wish to pass one of the prohibited objects to an amorphous open
+array parameter, simply assign it to a local variable and pass that.
+
+For ARRAY OF WORD, there is of course the extra restriction that the 
+actual must be word aligned and a multiple of word size (see error 307). 
+\
+291 No literals except sets and strings allowed here
+As described under error 290, it is an implementation restriction that in
+general constants are not allowed as actual parameters corresponding to
+amorphous open array formals.  For similar reasons, it is not allowable to 
+CAST constants to other types, except in these special cases. 
+\
+292 Values cast to structured types must be simple
+Values to be cast to structured types must have an address at runtime.
+Expressions are in general not acceptable -- see error 290 for details and 
+avoidance procedures. 
+\
+293 Value is too large to cast to unstructured type
+Unstructured types occupy one word or less; you are not allowed to CAST 
+larger objects to these types, as there is no definition of which bits are 
+to be retained and which discarded. 
+\
+294 Actual parameter must be a pointer type
+The first parameter of the SYSTEM procedures INCADR, DECADR, DIFADR must be 
+either a pointer type or ADDRESS; so must the second parameter of DIFADR. 
+
+The parameter of NEW and DISPOSE must be a pointer type (not ADDRESS).
+\
+>Type of expression was <
+\
+295 Right operand must be greater than zero
+The whole number modulo arithmetic operators DIV and MOD are defined only for 
+positive right operands. For negative right operands, the quotient remainder 
+operators '/' and REM are available, but note that they have different 
+semantics from DIV and MOD for negative left operands. 
+\
+296 FOR loop control variable is threatened in uplevel access
+The loop control variable has been threatened inside the body of a nested
+procedure. Threatening actions include being assigned to, passed as a 
+VAR-mode parameter, having its address taken, or subjected to INC or DEC.
+\
+297 FOR loop control variable is threatened
+The loop control variable has been threatened inside the body of the loop.
+Threatening actions include being assigned to, passed as a VAR-mode parameter, 
+having its address taken, or subjected to INC or DEC.
+\
+298 Feature not implemented -- read latest release notes
+\
+299 Multi-dimensional open array parameters not implemented yet
+ARRAY OF ARRAY OF ... is not implemented, pending definition of what actual 
+parameters are compatible.
+\
+300 Incompatible keys for symbol files
+When IMPORTing from various modules, repeated references to the same module 
+are checked for the same version keys. Thus, for example, if module A imports 
+from modules B and C, and each of B and C in turn imported from D, the two 
+references to D must be consistent. Note that this check also applies to an 
+IMPLEMENTATION module's implicit import of its own DEFINITION file; thus if 
+the implementation of A imports from B, and B's DEFINITION imported from A, 
+the check for consistency between the current A and that via B is made. 
+
+You must determine which module(s) are obsolete, and recompile in the
+appropriate order. Use of the -V (super-verbose) option of gpm is 
+strongly recommended, or use gpmake.
+\
+301 Wrong name in symbol file
+The module name in the symbol file (quoted in the error message) is not the
+expected one (that in the IMPORT statement). With the symbol file name 
+normally derived from the module name, this will occur only if another file
+has been renamed to the symbol file name. It is common to rename object files 
+(or better still, use the -f option) when there are several alternative 
+implementations, but you should never rename a symbol file.
+\
+302 Linker name is not unique
+Since linker names are constructed from the first 10 characters of the module 
+name followed by the first 20 characters of the exported procedure or variable 
+name, it is possible for clashes to occur within a compilation unit, where the 
+full names would not clash. Thus, for example, procedure 
+	FilesMod001.WriteToLogfileAndStdError 
+would produce the linker name
+	FilesMod00_WriteToLogfileAndStd
+This name would clash with the name formed for the procedure
+	FilesMod002.WriteToLogfileAndStdOut
+Clearly, avoidance of module and exported procedure / variable names with 
+long common prefixes will prevent this problem. The problem does not arise 
+for non-exported names, since gpm itself takes account of all characters of 
+identifiers no matter how long.
+
+Note that further clashes may arise at build time, due to names constructed
+in independent compilation units. 
+\
+303 Fatal circular import through this module
+This DEFINITION module indirectly imports itself. This can only occur if it 
+imports from another module which in turn imports from an earlier version of 
+the module being compiled. 
+\
+304 Target object has zero storage size
+The object pointed to by the parameter of NEW has zero size. If the default 
+ALLOCATE procedure was the result of the substitution for NEW, a run-time 
+error would result.
+\
+305 Header file not found
+It is assumed that the C header file for the runtime system file, m2rts.h 
+exists somewhere in the path given by the environment variable $M2SYM.
+\
+306 Library name has bad format in header file
+This error is not used in the current version of gpm.
+\
+307 Expression cannot be aligned with specified type
+When an expression is CAST to another type, the alignment requirements of
+the new type must not be any greater than the old. Since CAST does not
+generate any code, the old bit pattern, in its old alignment, must be
+usable as a value of the new type. Thus, for example, an ARRAY [1..4] 
+OF CHAR cannot be cast to CARDINAL, since the required word 
+alignment cannot be guaranteed. 
+\
+308 Ident was already uplevel referenced in this scope
+The identifier being declared has already been used in the current scope to
+reference an object in an enclosing scope -- thus there is a conflict
+between the apparent reference to its previous (uplevel) meaning and the
+attempted new meaning.
+\
+309 Procedure declared FORWARD was not elaborated
+A procedure declared using the FORWARD keyword was not elaborated within the 
+same block. It is a rule that the forward declaration and its elaboration 
+must be in the same lexical scope.
+
+Remember that forward declarations are not required for gpm. The keyword 
+is only recognized in order to provide source code compatability with those
+Modula compilers which have single-pass restrictions.
+\
+310 Array exceeds machine size limit
+The C compiler limits the size of an array, and its index range, to less
+than 2^31. Even for sizes just less than 2^31, the loader fails with an
+obscure error. gpm sets an experimentally-determined limit of 2^31 - 90000,
+and rejects any larger sizes with this error.
+
+Note that this is of rather academic interest, since the executable file must
+be large enough to hold the array in question, and such a 2 gigabyte file
+would very likely fill the file system. See warning 496.
+
+The segmented memory of the PC limits arrays to either 2^16 bytes (global, or
+static, variables) or 2^15 (local, or automatic, variables) - see errors 327
+and 328. Dynamic arrays (allocated via Storage) are restricted only by
+available memory size and access methods, and in the case of the current gpm
+Storage the limit is the available conventional (first 640K) memory.  Thus on
+the PC this error occurs if size exceeds 640K; in practice, low memory use by
+programs will reduce the available memory - as always the result of NEW (or
+ALLOCATE) calls must be checked for NIL.
+\
+311 Parameter name was repeated
+The previous procedure declaration had two formal parameters with the same name
+\
+312 Expression must be a designator
+The first parameter to the exception handler procedure CALL must be the 
+designator of a visible procedure, but (unlike the usual case with procedure 
+parameters) need not be declared at level-0.
+\
+313 Constructor has too few elements
+Value constructors for arrays and records must have exactly the correct
+number of elements, taking into account the multiplicity of values which 
+appear with the BY repeatCount construct.
+\
+314 Constructor has too many elements
+Value constructors for arrays and records must have exactly the correct
+number of elements, taking into account the multiplicity of values which 
+appear with the BY repeatCount construct.
+\
+315 Ranges not allowed in record or array constructors
+Ranges (constructor elements of the form expression .. expression) are only 
+allowed in set constructors. They are not permitted in record or array 
+contructors.
+\
+316 Replicators only allowed for array constructors
+Replicators (constructor elements of the form "expression BY repeatCount")
+are only allowed in array constructors. They are not permitted in record or 
+set constructors.
+
+The plausible use of replicators in records with repeated elements of the 
+same kind is not supported by ISO WG-13.
+\
+317 Repetition count must be positive
+The repetition count in an array constructor must be a positive, constant 
+value.  Probably it does not make any sense unless it is a non-zero, positive, 
+constant value.
+
+Check that you have gotten the order of expressions correct. The left-hand-
+side of the BY is the expression value which you wish to replicate, the right-
+hand-side is the number of times which you want it repeated.
+\
+318 Illegal assign of INTERFACE proc with open array
+Procedures from INTERFACE modules with open arrays have parameters passed 
+in a different way to Modula procedures (no HIGH value is passed).  Such 
+procedures can only be assigned to variables of procedure types which are 
+also imported from INTERFACE procedures.
+
+If you really do need to assign this procedure, write a dummy interface 
+definition which exports a procedure type with a conforming parameter list. 
+Import this procedure type and declare the variable to be of this type. 
+This is pretty tricky stuff -- read the chapter Interfacing to other 
+languages before going any further.  Alternatively, you may declare the
+formal as "POINTER TO <element-type>" instead, and pass ADR(arr[0]) as 
+the actual parameter.
+\
+319 Open arrays may only be accessed element by element
+Open array formal parameters may only be accessed one element at a time.
+In cases where all elements are to be accessed it is necessary to write 
+code along these lines --
+        FOR index := 0 TO HIGH(param) DO
+          -- do something with param(index) ...
+\
+320 Procedure declaration nesting limit has been exceeded
+Procedure declarations may only be nested 18 deep. That is 17 procedures nested
+inside each other, inside some enclosing module. In counting the levels when 
+modules are nested inside procedures, only the levels of procedure declarations
+count. This is because the data belonging to such dynamic modules shares the 
+stack frame with the data of the enclosing procedure.
+
+Compared to Pascal there is little need to nest procedure declarations in 
+Modula. Instead, visibility of identifiers is best controlled by the 
+declaration of modules.
+\
+321 RETRY is not inside an EXCEPT clause
+The retry statement is only allowed to be used within an except clause,
+in the same way in which EXIT may only be used inside a loop.
+\
+322 Forward IMPORT not elaborated
+An object IMPORTed into a local module may be declared later in the
+enclosing module, or in a later local module (provided it is exported
+from that local module). This message will appear at the end of the scope
+which is the source of the IMPORT, when the declaration has not so
+occurred.  (cf errors 224, 225 and 309)
+\
+323 Declaration must precede use in a declaration
+Although use of an identifier before declaration is allowed in general,
+it is not permitted when that use forms part of another declaration
+(i.e. a use of a type identifier). The exceptions to the restriction are
+declarations of pointer and procedure types.
+Most violations of this rule attract error 204 or 205; however, if an
+IMPORTed identifier which has not yet been declared is used in a
+declaration this message is given.
+\
+324 Expression must be compatible with control variable
+Modula requires that the type of the upper bound expression of a FOR
+loop and the control variable have identical types, or share host (of
+subrange) type. Note that this is more restrictive that the requirement
+that the lower bound be assignment compatible with the control variable.
+\
+325 Linker name aliases are only permitted for INTERFACE modules.
+GPM only allows name aliases (for variable and procedure names) within
+the mechanism of INTERFACE modules.
+\
+326 FOR control variable cannot be a record field.
+The control variable of a FOR loop must be a "simple" variable - that is,
+it cannot be a field of a record. This control variable is a field of a
+record designator specified in an enclosing WITH statement.
+Errors 206,239..241,279,296&297 refer to other restrictions on control
+variables.
+\
+327 [PC only] Local variables too large
+In the PC version only, the total size of local (automatic) variables of
+a single procedure is limited to 32768 bytes (arising from the signed
+16-bit offsets used to address parameters and local variables in the stack
+frame). To overcome this limitation, use dynamic allocation for large
+variables.
+\
+328 [PC only] Global variables too large
+In the PC version only, the total size of global (static) variables of a
+single module is limited to 65535 (arising from the object-format and
+segment size limit). As for error 327, dynamically-allocated variables
+may be used to avoid this limit.
+\
+489 MOD or DIV of negative number will trap at runtime, if reached.
+The whole number modulo arithmetic operators DIV and MOD are defined only for 
+positive right operands. For negative right operands, the quotient remainder 
+operators '/' and REM are available, but note that they have different 
+semantics from DIV and MOD for negative left operands. 
+\
+490 Divide by zero will trap at runtime, if reached.
+This expression performs a divide by zero.  If control reaches this 
+statement at runtime, a fatal trap will occur.
+\
+494 Non-standard assignment to a BYTE, WORD or ADDRESS variable.
+GPM allows any word-sized value to be assigned to a variable of type WORD,
+any byte-sized value to be assigned to a variable of type BYTE, and any
+pointer or opaque value to be assigned to a variable of type ADDRESS.
+This behaviour is non-standard, and hence non-portable, although a common 
+extension.  The standard allows such assignments only for substitition 
+of actual for formal parameters.
+\
+495 Name or function is not standard
+Where it is known that the name, functionality or formal parameters of a 
+built-in procedure will change in the next release this warning is given.
+Only a single warning is given for each affected identifier, no matter 
+how many times they are used.
+
+In the current release, several SYSTEM procedures are known to be changing, 
+due to proposals currently before ISO WG-13.
+\
+496 Array is very large
+As explained under error 310, gpm allows arrays whose size may well
+embarass virtual memory management, file system capacity, or both. Since
+such a large size may be unintended, this warning is given for sizes
+greater than 16 megabytes.
+
+On the PC, where segmentation limits begin at 32K bytes, this warning is
+given for sizes greater than 32K (see further details under errors 310, 327
+& 328).
+\
+497 Last type has zero storage size
+The type used in this type or variable declaration has no useful capacity.
+While this is syntactically legal and may occur deliberately in some test
+programs, it may also result inadvertently from the deletion of code, or
+code ignored due to comment brackets.
+\
+498 Case statement has very low density
+Of the range of values used by this CASE statement, less than 25% are actually 
+referenced; since the compiler typically implements a CASE statement as a jump 
+table, relatively large amounts of code may be generated. If the Modula code 
+can be expressed as IF statements without loss of clarity, more compact code 
+will usually result.
+\
+499 Variant tags are ignored in this implementation
+In arguments to SIZE, TSIZE, NEW and DISPOSE, variant tags may be given to
+specify the size of a particular variant. gpm ignores these, and uses the
+size of the largest variant.
+\
+500 Symbols follow module end
+It is legal to have further text following the END ModuleName. which must
+terminate any compilation unit; however, since this may not have been
+intended, this warning is issued.
+\
+501 Obsolete syntax, colon is compulsory
+Modula syntax requires that an undistinguished variant record be declared as 
+CASE : TagType OF ...; however, the older form CASE TagType OF ... is also 
+accepted by gpm , with this warning.
+\
+502 Obsolete syntax, export list is ignored
+Modula no longer requires that objects be explicitly exported from
+definition modules -- all names defined in definition modules are exported
+automatically. The older form is simply ignored.
+\
+503 Invalid option selection character (I,R,F,C,S only)
+Any comment beginning with optional whitespace followed by "$" is assumed
+to be an option selection. Like any comment, it has no effect on the meaning
+of the program, but nevertheless is interpreted by the compiler as a direction 
+to generate code which implements that meaning in a specific way (if possible).
+The two characters following the $ must be an option selector character and 
+the command character; for details, see the Implementation Specifics Chapter.
+
+This comment appears to be an option selector, but has meaningless option
+selector character.
+\
+504 Too many levels of option restoration
+One of the option commands, specified by '=', is to restore the option
+setting to its value before the last change. If an '=' command has no
+corresponding change to undo, this warning results. Note that changes nest
+only to a depth of 8, so that the warning may be due to an attempt to
+restore the earliest of more than 8 nested changes to the same option.
+\
+505 Invalid option operator (+, -, = are valid)
+The only option commands available are those specified by the three
+operators:
+	+ set option on (saving previous setting, up to 8 levels)
+	- set option off (saving previous setting, up to 8 levels)
+	= restore option setting to value saved before last change
+\
+506 Obsolete syntax, use SYSTEM.CAST for type transfers
+The syntax of the unsafe, unchecked cast from one type to another is
+CAST(NewType, value); however, the older form NewType(value) is accepted.
+\
+507 Procedure is not called, assigned, or exported
+Clearly, this procedure is of no use. This may be a valid state during
+program development, or it may reflect a procedure no longer used. It may,
+however, be a symptom of a mis-spelt reference to a procedure which
+unfortunately happened to match another procedure name.
+\
+508 No EXIT from this LOOP
+This LOOP is 'infinite' since there is no EXIT or RETURN within it. This
+may be deliberate, but may be an omission. Note that EXIT escapes from only 
+the innermost enclosing LOOP, so that an outer LOOP will still need an EXIT. 
+By contrast, the use of RETURN forcibly terminates all loops, and the 
+procedure in which they are enclosed.
+\
+509 Priority not implemented, ignored
+The module priority concept is not implemented, due to the lack of low-level 
+access into unix.
+\
+510 Non-standard conversion using VAL
+GPM allows any scalar value to be transformed into any other scalar value 
+using the pervasive function VAL.  This example is non-standard, and thus 
+is not portable. The standard allows only (1) numeric -> numeric, 
+(2) any -> whole number, (3) whole number -> any, (4) any -> same type.
+In cases of subranges, these rules apply to the host types.
+\
+511 REAL constant evaluates to INFINITY
+Either a constant literal is too large for the floating point format,
+or the result of a compile-time calculation caused an overflow
+\

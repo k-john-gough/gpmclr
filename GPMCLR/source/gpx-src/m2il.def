@@ -1,0 +1,303 @@
+(* ============================================================ *)
+(*  M2IL is the module which defines ilasm name ordinals.       *)
+(*  Name spelling is defined by the lexical rules of ILASM.	*)
+(*  Copyright (c) John Gough 1999--2003.			*)
+(* ============================================================ *)
+
+DEFINITION MODULE M2IL;
+  IMPORT Types;
+
+(* ============================================================ *)
+
+  TYPE  LabelType = CARDINAL;
+        ModeEnum  = (none, intV, crdV);
+	Relops	  = (lsR,leR,eqR,gtR,geR,neR,inR);
+
+  TYPE Object = (
+                byteInt,        (* an 8-bit integer   *)
+                byteCard,       (* an 8-bit unsigned  *)
+                shortInt,       (* a 16-bit integer   *)
+                shortCard,      (* a 16-bit unsigned  *)
+                longInt,        (* a 32-bit integer   *)
+                longCard,       (* a 32-bit unsigned  *)
+                word,           (* uninterpreted word *)
+                hugeInt,        (* a 64-bit integer   *)
+                float,          (* ieee single float  *)
+                double);        (* ieee double float  *)
+
+(* ============================================================ *)
+
+  CONST
+        dot_error      = 0;
+        dot_try        = 1;
+        dot_class      = 2;
+        dot_entrypoint = 3;
+        dot_field      = 4;
+        dot_implements = 5;
+        dot_interface  = 6;
+        dot_locals     = 7;
+        dot_line       = 8;
+        dot_method     = 9;
+        dot_source     = 10;
+        dot_super      = 11;
+        dot_throws     = 12;
+        dot_var        = 13;
+        dot_assembly   = 14;
+        dot_namespace  = 15;
+        dot_maxstack   = 16;
+
+(* ============================================================ *)
+
+  TYPE  Instruction = (
+	opc_error,
+	opc_add,
+	opc_add_ovf,
+	opc_add_ovf_un,
+	opc_and,
+	opc_ble_un,
+	opc_ble_un_s,
+        opc_conv_r_un,
+dummy8,               (* Dummy elements are inserted to keep   *)
+                      (* the enumeration ordinals synchronized *)
+                      (* with IlasmCode in GPCP.               *)
+	opc_arglist,
+	opc_break,
+	opc_ceq,
+	opc_cgt,
+	opc_cgt_un,
+	opc_ckfinite,
+	opc_clt,
+	opc_clt_un,
+	opc_conv_i,
+	opc_conv_i1,
+	opc_conv_i2,
+	opc_conv_i4,
+	opc_conv_i8,
+	opc_conv_ovf_i,
+	opc_conv_ovf_i_un,
+	opc_conv_ovf_i1,
+	opc_conv_ovf_i1_un,
+	opc_conv_ovf_i2,
+	opc_conv_ovf_i2_un,
+	opc_conv_ovf_i4,
+	opc_conv_ovf_i4_un,
+	opc_conv_ovf_i8,
+	opc_conv_ovf_i8_un,
+	opc_conv_ovf_u,
+	opc_conv_ovf_u_un,
+	opc_conv_ovf_u1,
+	opc_conv_ovf_u1_un,
+	opc_conv_ovf_u2,
+	opc_conv_ovf_u2_un,
+	opc_conv_ovf_u4,
+	opc_conv_ovf_u4_un,
+	opc_conv_ovf_u8,
+	opc_conv_ovf_u8_un,
+	opc_conv_r4,
+	opc_conv_r8,
+	opc_conv_u,
+	opc_conv_u1,
+	opc_conv_u2,
+	opc_conv_u4,
+	opc_conv_u8,
+	opc_cpblk,
+	opc_div,
+	opc_div_un,
+	opc_dup,
+	opc_endcatch,
+	opc_endfilter,
+	opc_endfinally,
+	opc_initblk,
+	opc_jmpi,
+	opc_ldarg_0,
+	opc_ldarg_1,
+	opc_ldarg_2,
+	opc_ldarg_3,
+	opc_ldc_i4_0,
+	opc_ldc_i4_1,
+	opc_ldc_i4_2,
+	opc_ldc_i4_3,
+	opc_ldc_i4_4,
+	opc_ldc_i4_5,
+	opc_ldc_i4_6,
+	opc_ldc_i4_7,
+	opc_ldc_i4_8,
+	opc_ldc_i4_M1,
+	opc_ldelem_i,
+	opc_ldelem_i1,
+	opc_ldelem_i2,
+	opc_ldelem_i4,
+	opc_ldelem_i8,
+	opc_ldelem_r4,
+	opc_ldelem_r8,
+	opc_ldelem_ref,
+	opc_ldelem_u,
+	opc_ldelem_u1,
+	opc_ldelem_u2,
+	opc_ldelem_u4,
+	opc_ldind_i,
+	opc_ldind_i1,
+	opc_ldind_i2,
+	opc_ldind_i4,
+	opc_ldind_i8,
+	opc_ldind_r4,
+	opc_ldind_r8,
+	opc_ldind_ref,
+	opc_ldind_u,
+	opc_ldind_u1,
+	opc_ldind_u2,
+	opc_ldind_u4,
+	opc_ldlen,
+	opc_ldloc_0,
+	opc_ldloc_1,
+	opc_ldloc_2,
+	opc_ldloc_3,
+	opc_ldnull,
+	opc_localloc,
+	opc_mul,
+	opc_mul_ovf,
+	opc_mul_ovf_un,
+	opc_neg,
+	opc_nop,
+	opc_not,
+	opc_or,
+	opc_pop,
+	opc_refanytype,
+	opc_rem,
+	opc_rem_un,
+	opc_ret,
+	opc_rethrow,
+	opc_shl,
+	opc_shr,
+	opc_shr_un,
+	opc_stelem_i,
+	opc_stelem_i1,
+	opc_stelem_i2,
+	opc_stelem_i4,
+	opc_stelem_i8,
+	opc_stelem_r4,
+	opc_stelem_r8,
+	opc_stelem_ref,
+	opc_stind_i,
+	opc_stind_i1,
+	opc_stind_i2,
+	opc_stind_i4,
+	opc_stind_i8,
+	opc_stind_r4,
+	opc_stind_r8,
+	opc_stind_ref,
+	opc_stloc_0,
+	opc_stloc_1,
+	opc_stloc_2,
+	opc_stloc_3,
+	opc_sub,
+	opc_sub_ovf,
+	opc_sub_ovf_un,
+	opc_tailcall,
+	opc_throw,
+	opc_volatile,
+	opc_xor,
+dummy146,
+dummy147,
+dummy148,
+dummy149,
+dummy150,
+	opc_ldarg,
+	opc_ldarg_s,
+	opc_ldarga,
+	opc_ldarga_s,
+	opc_starg,
+	opc_starg_s,
+	opc_stloc,
+	opc_stloc_s,
+	opc_ldc_i4,
+	opc_unaligned,
+	opc_ldc_i4_s,
+	opc_ldc_i8,
+	opc_ldc_r4,
+	opc_ldc_r8,
+dummy165,
+	opc_beq,
+	opc_beq_s,
+	opc_bge,
+	opc_bge_s,
+	opc_bge_un,
+	opc_bge_un_s,
+	opc_bgt,
+	opc_bgt_s,
+	opc_bgt_un,
+	opc_bgt_un_s,
+	opc_ble,
+	opc_ble_s,
+	opc_blt,
+	opc_blt_s,
+	opc_blt_un,
+	opc_blt_un_s,
+	opc_bne_un,
+	opc_bne_un_s,
+	opc_br,
+	opc_br_s,
+	opc_brfalse,
+	opc_brfalse_s,
+	opc_brtrue,
+	opc_brtrue_s,
+	opc_leave,
+dummy191,
+dummy192,
+dummy193,
+	opc_call,
+	opc_callvirt,
+	opc_jmp,
+	opc_ldftn,
+	opc_ldvirtftn,
+	opc_newobj,
+	opc_ldfld,
+	opc_ldflda,
+	opc_ldsfld,
+	opc_ldsflda,
+	opc_stfld,
+	opc_stsfld,
+	opc_box,
+	opc_castclass,
+	opc_cpobj,
+	opc_initobj,
+	opc_isinst,
+	opc_ldelema,
+	opc_ldobj,
+	opc_mkrefany,
+	opc_newarr,
+	opc_refanyval,
+	opc_sizeof,
+	opc_stobj,
+	opc_unbox,
+	opc_ldstr,
+	opc_calli,
+	opc_ldptr,
+	opc_ldtoken,
+dummy223,
+	opc_switch,
+	opc_ldloc,
+	opc_ldloc_s,
+	opc_ldloca,
+	opc_ldloca_s);
+
+(* ============================================================ *)
+
+  TYPE InstructionTable = ARRAY Object OF Instruction;
+
+(* ============================================================ *)
+
+  TYPE
+     NmIndex = [0 .. 19];
+     OpName  = ARRAY NmIndex OF CHAR;
+
+(* ============================================================ *)
+
+  VAR	op  : ARRAY Instruction OF OpName;
+        cd  : ARRAY Instruction OF INTEGER;
+	dl  : ARRAY Instruction OF INTEGER;
+
+  VAR   dirStr  : ARRAY NmIndex OF OpName;
+
+END M2IL.
+(* ============================================================ *)

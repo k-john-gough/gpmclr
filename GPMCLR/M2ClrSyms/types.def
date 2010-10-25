@@ -1,0 +1,73 @@
+
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE Types;
+
+  (*******************************************************)
+  (* this module supplies some traditional identifiers	 *)
+  (* subranges occupy as much storage space as needed	 *)
+  (*******************************************************)
+  (* NOTE:  On 32 bit platforms (non Alpha) Int32/Card32 *)
+  (*        are aliases for INTEGER/CARDINAL		 *)
+  (*******************************************************)
+  
+
+  (* Type Mapping Table
+   * ==================
+   *                                    Size
+   *     Data Type         Alpha        Unix       PC
+   *     ---------------+-----------+-----------+-----------+
+   *     short int      |    16     |     16    |      8    |
+   *     short unsigned |    16     |     16    |      8    |
+   *                    |           |           |           |
+   *     int            |    32     |     32    |     16    |
+   *     unsigned int   |    32     |     32    |     16    |
+   *                    |           |           |           |
+   *     long int       |    64     |     32    |     32    |  
+   *     unsigned long  |    64     |     32    |     32    |
+   *     ---------------+-----------+-----------+-----------+
+   *)
+
+TYPE 
+    (* Signed Types - Integers    *)    (* "c" type mapping      *)
+    (* --------------------------------------------------------- *) 
+
+    Int8     = [-128 .. 127];		(* => signed char        *)
+    Int16    = [-32768 .. 32767];	(* => short int          *)
+    Int32    = INTEGER;                 (* rather than subrange  *)
+    LONGINT  = INTEGER;                 (* => long int           *)
+
+ 
+    (* Unsigned Types - Cardinals *)    (* "c" type mapping      *)
+    (* --------------------------------------------------------- *)
+ 
+    Card8    = [0 .. 255];		(* => unsigned char      *)
+    Card16   = [0 .. 65535];		(* => short unsigned int *)
+    Card32   = CARDINAL;                (* rather than subrange  *)
+    LONGCARD = CARDINAL;                (* => unsigned long int  *)
+
+
+    (* Alternative Type Names    *)
+    (* ----------------------    *)
+
+    BYTEINT   = Int8;
+    BYTECARD  = Card8;
+
+    SHORTINT  = Int16;
+    SHORTCARD = Card16;
+
+    MIDINT    = Int32;
+    MIDCARD   = Card32;
+
+END Types.

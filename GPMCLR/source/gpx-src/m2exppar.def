@@ -1,0 +1,77 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*            Expression Parser and Tree Constructor.           *)
+(*								*)
+(*    (c) copyright 1987 Faculty of Information Technology      *)
+(*								*)
+(*      original module : extracted from M2Parser April 1988    *)
+(*      modifications   : 24-Apr-88 add Expression              *)
+(*                      : 31-Aug-88 add Error203()              *)
+(*                                                              *)
+(****************************************************************
+$Log: m2exppar.def,v $
+Revision 1.2  1997/01/16 03:42:12  gough
+new procedure PreCondition, changed params for GetCaseRange
+
+Revision 1.1  1994/04/07 04:52:52  lederman
+Initial revision
+
+****************************************************************)
+
+DEFINITION MODULE M2ExpParser;
+  FROM M2Alphabets IMPORT HashBucketType, LexAttType, SymbolSet;
+  FROM M2Designators IMPORT ExprDesc;
+  FROM M2NodeDefs IMPORT IdDesc, TypeDesc;
+(*
+  FROM M2StructureDefs IMPORT CaseStatDesc;
+ *)
+  FROM GenSequenceSupport IMPORT Sequence;
+
+  PROCEDURE Qualident(VAR obj : IdDesc);
+  (* returns the ident designated, or NIL for error *)
+  (* postcondition : either id = NIL, or id designates one of:
+                       entire variable, constant, type or proc. *)
+
+  PROCEDURE QualRest(hsh : HashBucketType;
+                  VAR id : IdDesc);
+  (* same as Qualident, except that hsh holds the name of the 
+     identifier previously read. Current symbol is one past 
+     the identifier (perhaps as the result of a lookahead)   *)
+
+  PROCEDURE ConstExpr(halt : SymbolSet;
+                  VAR type : TypeDesc;
+                  VAR cVal : LexAttType);
+  (* in case of error, the type is returned NIL *)
+
+  PROCEDURE PreCondition(pTyp : TypeDesc);
+  (* parse precondition *)
+
+  PROCEDURE GetCaseRange(halt : SymbolSet;
+                     VAR sequ : Sequence); (* of case ranges *)
+  (* postcondition : new case range is linked to sequ    *)
+
+  PROCEDURE ActualParams(halt : SymbolSet;
+                     VAR sequ : Sequence); (* of ExprDesc *)
+  (* precondition : lPar has been read *)
+
+  PROCEDURE Expression(halt : SymbolSet;
+                   VAR expr : ExprDesc);
+  (* postcondition : expr points to syntax tree for exp.  *)
+
+  PROCEDURE SkipTo(haltSet : SymbolSet; errNo : CARDINAL);
+  (* if symbol is not in set then note errror and skip *)
+
+  PROCEDURE ErrSkip(haltSet : SymbolSet; errNo : CARDINAL);
+  (* mark error and skip until in designated set *)
+
+  PROCEDURE Error203(id : IdDesc);
+  (* id is the clashing IdDesc. If an enum constant, error 266
+     is reported, else 203. Calls ErrIdent if symbol <> ident *)
+ 
+  PROCEDURE ImportOwnSyms;
+
+  PROCEDURE CompImports;
+
+END M2ExpParser.

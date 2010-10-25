@@ -1,0 +1,60 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+(*******************************************************************)
+(******** support for cardinal sequences...no random access ********)
+(*******************************************************************)
+
+(* !NONREC *) DEFINITION MODULE CardSequences; (* kjg nov '84 *)
+
+TYPE ElemPtr;
+TYPE Sequence = RECORD
+                  first : ElemPtr; (* ptr to first element *)
+                  last  : ElemPtr  (* ptr to last element  *)
+                END;
+
+PROCEDURE InitSequence(VAR seq : Sequence);
+          (* sets all fields NIL *)
+
+PROCEDURE LinkLeft (VAR seq : Sequence; Element : CARDINAL);
+PROCEDURE LinkRight(VAR seq : Sequence; Element : CARDINAL);
+
+PROCEDURE InitCursor(seq : Sequence; VAR cursor : ElemPtr);
+(* postcondition: cursor is attached. GetNext will get first. *)
+
+PROCEDURE GetFirst(       seq : Sequence;
+                   VAR cursor : ElemPtr;
+                   VAR result : CARDINAL );
+(* returns the first element. GetFirst on empty sequence rtns NIL *)
+(* postcondition: cursor is attached, next GetNext will fetch 2nd *)
+
+PROCEDURE GetNext( VAR cursor : ElemPtr;
+                   VAR result : CARDINAL);
+(* precondition: cursor is already attached. Returns element and- *)
+(* "increments" cursor. Returns NIL if sequence is already ended. *)
+
+PROCEDURE Ended(cursor : ElemPtr) : BOOLEAN;
+(* precondition: cursor is attached. Returns "cursor = NIL" *)
+
+PROCEDURE NextIsLast(cursor : ElemPtr) : BOOLEAN;
+(* precondition: cursor is attached. Returns "cursor = seq.last" *)
+
+PROCEDURE IsEmpty(seq : Sequence) : BOOLEAN;
+(* postcondition : returns "seq is the empty sequence" *)
+
+PROCEDURE LengthOf(seq : Sequence) : CARDINAL;
+
+PROCEDURE DisposeList(VAR seq : Sequence);
+	  (* reinitializes the sequence header *)
+
+END CardSequences.

@@ -1,0 +1,97 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+(* ============================================================ *
+ * 		Safe arithmetic operations 
+ *
+ * In all cases, the semantics are as follows
+ *  -- return the correct result, or fail=TRUE
+ *
+ * 	original module: kjg June 1994 
+ * ============================================================ *)
+
+(* !LIBRARY! *) DEFINITION MODULE Safe;
+
+  PROCEDURE AbsInt(lSrc      : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE NegInt(lSrc      : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE AddInt(lSrc,rSrc : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE AddCrd(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE SubInt(lSrc,rSrc : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE SubCrd(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE DivInt(lSrc,rSrc : INTEGER;  (* Modula2 DIV *)
+		    VAR dst  : INTEGER;  (* 2 quadrants *)
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE DivInt4Q(lop,rop : INTEGER;  (* Modula3 DIV *)
+		    VAR dst  : INTEGER;  (* 4 quadrants *)
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE DivCrd(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE SlashI(lSrc,rSrc : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE SlashC(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE ModInt(lSrc,rSrc : INTEGER;  (* Modula2 MOD *)
+		    VAR dst  : INTEGER;  (* 2 quadrants *)
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE ModInt4Q(lop,rop : INTEGER;  (* Modula3 MOD *)
+		    VAR dst  : INTEGER;  (* 4 quadrants *)
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE ModCrd(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE RemInt(lSrc,rSrc : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE RemCrd(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE MulInt(lSrc,rSrc : INTEGER; 
+		    VAR dst  : INTEGER; 
+		    VAR fail : BOOLEAN);
+
+  PROCEDURE MulCrd(lSrc,rSrc : CARDINAL; 
+		    VAR dst  : CARDINAL; 
+		    VAR fail : BOOLEAN);
+
+END Safe.

@@ -1,0 +1,60 @@
+
+(* ========================================================= *)
+(* Preliminary library module for Gardens Point Modula       *)
+(* Revision History:                                         *)
+(*                  pms 12 Jan 94 Now a preprocessed dpp file*)
+(* ========================================================= *)
+
+(* !LIBRARY! *) DEFINITION MODULE PathLookup;
+
+  FROM UxFiles IMPORT File;
+
+  PROCEDURE FindAndOpen(pathString   : ARRAY OF CHAR;
+                        baseName     : ARRAY OF CHAR;
+                        VAR openName : ARRAY OF CHAR;
+                        VAR openFile : File);
+
+  (* precondition  : pathString is nul terminated and has    *)
+  (*                 components separated by colon chars,    *)
+  (*                 openName is long enough for pathname    *)
+  (* postcondition : openFile <> NIL ==> file was found.     *)
+  (*                 openName has nul terminated absolute    *)
+  (*                 path name, or nul string if not found   *)
+
+
+  PROCEDURE FindAbsName(pathString   : ARRAY OF CHAR;
+                        baseName     : ARRAY OF CHAR;
+                        VAR openName : ARRAY OF CHAR;
+                        VAR found    : BOOLEAN);
+
+  (* precondition  : pathString is nul terminated and has    *)
+  (*                 components separated by colon chars,    *)
+  (*                 openName is long enough for pathname    *)
+  (* postcondition : found = TRUE ==> file was found.        *)
+  (*                 openName has nul terminated absolute    *)
+  (*                 path name, or nul string if not found   *)
+
+
+(* example of usage : to find file "foo.mod" on path $FOOPATH --
+
+  FROM PathLookup IMPORT FindAbsName;
+  FROM ProgArgs IMPORT EnvironString;
+  FROM UxFiles IMPORT File;
+
+  VAR file  : File;
+      path  : ARRAY [0 .. 99] OF CHAR;
+      name  : ARRAY [0 .. 79] OF CHAR;
+      found : BOOLEAN;
+
+  BEGIN
+    EnvironString("FOOPATH",path);
+    FindAbsName(path,"foo.mod",name,found);
+    IF found THEN
+      WriteString("found ");
+      WriteString(name); WriteLn;
+       -- and do whatever 
+    ELSE WriteString("not found");
+    END;
+*)
+
+END PathLookup.

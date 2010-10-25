@@ -1,0 +1,26 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*          Tree Traversal and ObjectCode Production            *)
+(*                                                              *)
+(*      (c) copyright 1988 Faculty of Information Technology    *)
+(*                                                              *)
+(*      original module : kjg May 1988                          *)
+(*      modifications   : kjg Jun 2003 CLR code emitter.        *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE M2ClrCode;
+
+PROCEDURE EmitOutput;
+(* precondition  : (1) the abstract syntax tree for the input file *
+ *                     has been built, and semantically checked    *
+ *                 (2) CurrentFlags() * errors = {}                *
+ *                 (3) NOT (defMod IN CurrentFlags())              *
+ * postcondition : output has been emitted                         *)
+
+END M2ClrCode.
+
+
+

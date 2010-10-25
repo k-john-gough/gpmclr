@@ -1,0 +1,106 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*		  Lexical Scanner for Compiler			*)
+(*	  Nested modules contain string and hash tables.	*)
+(*								*)
+(*           (c) copyright 1987 SoftWare Automata.              *)
+(*                                                              *)
+(*      original module : kjg july 1987                         *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(*                                                              *)
+(****************************************************************
+$Log: m2scanne.def,v $
+Revision 1.3  1997/01/16 04:58:55  gough
+new procedures PshSymScanState, PopSymScanState.  Remove InitSymScan.
+
+Revision 1.2  1995/10/18 00:43:58  lederman
+HUGE now INFINITY in M2MachineConstants
+
+Revision 1.1  1994/04/07 05:17:44  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2Scanner;
+
+FROM M2Alphabets IMPORT TerminalSymbols, Spellix, Flags, FlagSet,
+                        HashBucketType, LexAttType;
+
+
+VAR     symbol : TerminalSymbols;     (* symbol from input file *)
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+        symSmbl : TerminalSymbols;    (* symbol from symbol file *)
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+VAR     lexAtt : LexAttType;
+        (* this is a READ ONLY variable, should
+           really be a function application *)
+
+PROCEDURE GetSymbol;
+(* precondition  : there is an attached input stream which
+                   has been initialized by InitScanner;
+   postcondition : the variable symbol holds the next symbol.
+                   The attribute variable lexAtt holds any value.
+                   If the symbol is an identifier, then .hashIx
+                   holds the current hash table index for the id.
+                   If the symbol is a numeric literal, then
+                   .fixValue, .charValue or .floatValue contains
+                   the value. If the symbol is a string, then
+                   .stringIx has the stringtable index.		*)
+
+PROCEDURE GetSymSmbl;
+(* precondition  : there is an attached symbol file which
+		   has been initialized by InitSymScan;
+   postcondition : the variable symSmbl holds the next symbol.
+		   The attribute variable lexAtt holds any value.
+		   If the symbol is an identifier, then .hashIx
+		   holds the current hash table index for the id.
+		   If the symbol is a numeric literal, then
+		   .fixValue, .charValue or .floatValue contains
+		   the value. If the symbol is a string, then
+		   .stringIx has the stringtable index.		*)
+
+PROCEDURE InitScanner;
+(* precondition  : there is an attached input stream;
+   postcondition : the input stream is initialized, and
+		   the first symbol is already fetched.		*)
+
+PROCEDURE PshSymScanState;
+PROCEDURE PopSymScanState;
+
+(*
+PROCEDURE InitSymScan;
+(* precondition  : there is an attached symbol file stream;
+   postcondition : the sym-file stream is initialized, and
+		   the first symSmbl is already fetched.	*)
+ *)
+
+PROCEDURE InitializeOptions(init : FlagSet);
+(* sets initial value of the flags. Use for setting options
+   specified from the command line to the shell maybe. 		*)
+
+(* 
+ *   The following procedures have to do with parser 
+ *   synchronization. When syntax errors are detected 
+ *   StartSyncCount is called. IsSynchronized becomes true
+ *   when syncCount tokens have been parsed without error
+ *)
+PROCEDURE IsSynchronized() : BOOLEAN;
+PROCEDURE StartSyncCount();
+
+PROCEDURE CurrentFlags() : FlagSet;
+(* returns flags set by pragmas or by compilation events.	*)
+
+PROCEDURE SetFlagOn(flg : Flags);
+(* postcondition : flg is set in current flags. *)
+
+PROCEDURE RelaxLexicalRules();
+(* allows C-style names to be used *)
+
+END M2Scanner.

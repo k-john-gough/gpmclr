@@ -1,0 +1,26 @@
+
+(* ==================================================== *)
+(*  Definition file automatically produced by MkEnumIO  *)
+(* ==================================================== *)
+
+DEFINITION MODULE TermSymbolsIO;
+
+  FROM MkAlphabets IMPORT TermSymbols;
+  FROM UxFiles IMPORT File;
+  FROM ConvTypes IMPORT ConvResults;
+
+  VAR  termCh : CHAR;  (* Terminating character of input
+                          procedures Read and TextRead *)
+
+  PROCEDURE Write(val : TermSymbols);
+  (* write name of val to std output *)
+
+  PROCEDURE TextWrite(fil : File;
+                      val : TermSymbols);
+  (* write name of val to stream fil *)
+
+  PROCEDURE GiveStr(val : TermSymbols;
+               VAR str : ARRAY OF CHAR);
+  (* receive name of val, truncate if necessary *)
+
+END TermSymbolsIO.

@@ -1,0 +1,887 @@
+(* -- RCS header --
+	$Log:	mkenumio.mpp,v $
+Revision 1.2  93/11/03  09:00:05  mboss
+Added DEC Alpha changes
+
+Revision 1.1  93/03/25  14:31:48  mboss
+Initial revision
+
+*)
+##
+#  include machine.mpp
+##
+##      include the processor characteristic file
+##
+
+(****************************************************************)
+(*                                                              *)
+(*             Modula-2 Compiler Source Module                  *)
+(*                                                              *)
+(*          Symbol File Reconstructor and Decoder		*)
+(*                                                              *)
+(*     (c) copyright 1990 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg july 1990                         *)
+(*      modifications   : paa june 1992 (for MkEnumIO utility)	*)
+(*			: kjg sep  1992 use GpFiles utilities   *)
+(*			: jrh mar  1993 MAX(tHsh) not DayType!	*)
+(*                                                              *)
+(****************************************************************)
+
+
+# ifdef gpmpc
+#   define pcCode
+# endif gpmpc
+# ifdef pcnative
+#   define pcCode
+# endif pcnative
+
+# ifdef pcCode
+#   define ErrOutput Terminal
+# else pcCode
+#   define ErrOutput StdError
+# endif pcCode
+
+MODULE MkEnumIO;
+
+IMPORT SYSTEM, ErrOutput;
+
+FROM Ascii IMPORT cr, lf, ht;
+
+# ifdef pcCode
+FROM Terminal IMPORT Write, WriteString, WriteLn, WriteCard;
+# else  pcCode
+FROM InOut IMPORT Write, WriteString, WriteLn, WriteCard;
+# endif pcCode
+
+FROM MkAlphabets IMPORT 
+	SymbolSet, TermSymbols, Spellix, 
+	FileNameType, HashBucketType, LexAttType, ConBlock;
+
+FROM MkNameHandler IMPORT 
+	MarkInterimSpellix, InterimSpellix,
+	GetSourceRep, StringTable, SpellingIndex, 
+	MakeFileName, FindFileNameOnPath, EnterString;
+
+FROM MkScanner   IMPORT lexAtt, symSmbl, GetSymSmbl, InitSymScan;
+
+FROM MkInOut     IMPORT 
+	CloseSymFile, OpenSymFile, CreateMakFile,
+	CloseMakFile, WriteMakString, WriteMakKey,
+	WriteMb, AbortMessage, MiddleString;
+
+FROM ProgArgs IMPORT 
+	GetArg, ArgNumber, Assert, EnvironString, UNIXexit;
+
+FROM UxFiles IMPORT ModifyTime;
+
+    (*****************************************************)
+
+TYPE    TyNodeClass = (II, ZZ, UU, RR,
+                   bools, sets, enums, chars, ints, cards,
+                   floats, doubles, adrs, words, bytes, arrays,
+                   pointers, records, unions, procTypes,
+                   hiddens,    (* imported opaque *)
+                   opaqueTemp, (* own opaque type *)
+                   funcTypes, S1, SS, subranges);
+
+     TYPE TyNamDesc = RECORD
+			sy : TermSymbols;
+			mNam, iNam : HashBucketType;
+		      END;
+
+     VAR thisName  : HashBucketType; (* = thisMod^.name  *)
+         tHsh      : HashBucketType;
+         fHsh      : HashBucketType;
+	 tNam      : ARRAY [0 .. 255] OF CHAR;
+	 fNam      : ARRAY [0 .. 255] OF CHAR;
+	 verbose, super, typeFound : BOOLEAN;
+         lastTyp : TyNamDesc;
+         inpReq, exact : BOOLEAN;
+         argcount, ptr : CARDINAL;
+
+     CONST verNum  = 4;
+	   minNum  = 2;
+    (*****************************************************)
+
+     CONST WMB = WriteMb;
+
+    (*****************************************************)
+
+      PROCEDURE Check(expected : TermSymbols);
+      BEGIN
+        IF symSmbl <> expected THEN 
+ 	  AbortMessage("Corrupt symbol file","");
+        END;
+      END Check;
+
+      PROCEDURE WMS(s : ARRAY OF CHAR);
+       VAR i : CARDINAL;
+      BEGIN
+        i := 0;
+        WHILE s[i] <> "" DO WriteMb(s[i]); INC(i) END;
+      END WMS;
+
+      PROCEDURE WLn();
+      BEGIN
+#ifdef pcCode
+        WriteMb(cr);
+#endif pcCode
+        WriteMb(lf);
+      END WLn;
+
+      PROCEDURE WMC(crd : CARDINAL);
+      BEGIN
+        IF crd >= 10 THEN WMC(crd DIV 10) END;
+        WriteMb(CHR(crd MOD 10 + ORD("0")));
+      END WMC;
+
+      PROCEDURE WMH(hsh : HashBucketType);
+        VAR str : ARRAY [0 .. 79] OF CHAR;
+            idx : CARDINAL;
+      BEGIN
+        idx := 0;
+        GetSourceRep(hsh,str,idx);
+        WMS(str);
+      END WMH;
+
+      PROCEDURE DiagName(hsh : HashBucketType);
+        VAR str : ARRAY [0 .. 79] OF CHAR;
+            idx : CARDINAL;
+      BEGIN
+        idx := 0;
+        GetSourceRep(hsh,str,idx);
+        WriteString(str);
+      END DiagName;
+
+    (****************************************************)
+
+    PROCEDURE HeaderCheck();
+    BEGIN (* Header = VersionNumber DefModName. *)
+      IF (lexAtt.fixValue >= minNum) AND
+	 (lexAtt.fixValue <= verNum) THEN
+        GetSymSmbl; (* read past fixNum *)
+      ELSE 
+	ErrOutput.WriteString("Bad version number ... got value ");
+	ErrOutput.WriteCard(lexAtt.fixValue,0);
+	ErrOutput.WriteString(" should have been ");
+	ErrOutput.WriteCard(verNum,0);
+	AbortMessage(' Sorry',"");
+      END;
+      thisName := lexAtt.hashIx;
+(**)  Check(ident); GetSymSmbl; (* read past ident *)
+    END HeaderCheck;
+
+    PROCEDURE WriteDefFile;
+      VAR name : ARRAY [0 .. 255] OF CHAR;
+    BEGIN
+      MakeFileName(fHsh,def,name);
+      CreateMakFile(name);
+      IF verbose THEN 
+	WriteString("... output module name is '"); 
+	DiagName(fHsh); 
+	Write("'"); WriteLn;
+        WriteString("... outfile is '");
+        WriteString(name); 
+	Write("'"); WriteLn;
+      END;
+      WLn; WMS("(* ==================================================== *)"); 
+      WLn; WMS("(*  Definition file automatically produced by MkEnumIO  *)"); 
+      WLn; WMS("(* ==================================================== *)"); 
+      WLn;
+      WLn; WMS("DEFINITION MODULE "); WMH(fHsh); WMB(";");
+      WLn;
+      WLn; WMS("  FROM "); WMH(thisName); WMS(" IMPORT "); WMH(tHsh); WMB(";"); 
+      WLn; WMS("  FROM UxFiles IMPORT File;");
+      WLn; WMS("  FROM ConvTypes IMPORT ConvResults;"); 
+      WLn;
+      WLn; WMS("  VAR  termCh : CHAR;  (* Terminating character of input");
+      WLn; WMS("                          procedures Read and TextRead *)");
+      WLn;
+      WLn; WMS("  PROCEDURE Write(val : "); WMH(tHsh); WMS(");"); 
+      WLn; WMS("  (* write name of val to std output *)"); 
+      WLn; 
+      WLn; WMS("  PROCEDURE TextWrite(fil : File;"); 
+      WLn; WMS("                      val : "); WMH(tHsh); WMS(");"); 
+      WLn; WMS("  (* write name of val to stream fil *)"); 
+      WLn;
+      WLn; WMS("  PROCEDURE GiveStr(val : "); WMH(tHsh); WMB(";"); 
+      WLn; WMS("               VAR str : ARRAY OF CHAR);"); 
+      WLn; WMS("  (* receive name of val, truncate if necessary *)"); 
+      WLn;
+
+      IF inpReq THEN
+        WLn; WMS("  PROCEDURE Read(VAR val : "); WMH(tHsh); WMB(";");
+        WLn; WMS("                 VAR format : ConvResults);");
+        WLn; WMS("  (* read name of val from std input *)");
+        WLn;
+        WLn; WMS("  PROCEDURE TextRead(fil : File;");
+        WLn; WMS("                     VAR val : "); WMH(tHsh); WMB(";");
+        WLn; WMS("                     VAR format : ConvResults);");
+        WLn; WMS("  (* read name of val from stream fil *)");
+        WLn;
+        WLn; WMS("  PROCEDURE TakeStr(str : ARRAY OF CHAR;");
+        WLn; WMS("                    VAR val : "); WMH(tHsh); WMB(";");
+        WLn; WMS("                    VAR format : ConvResults);");
+        WLn; WMS("  (* receive val, giving name of val *)");
+        WLn;
+      END;
+
+      WLn; WMS("END "); WMH(fHsh); WMB(".");
+      WLn;
+
+      CloseMakFile();
+    END WriteDefFile;
+
+    PROCEDURE WriteModHeader;
+      VAR name : ARRAY [0 .. 255] OF CHAR;
+    BEGIN
+      MakeFileName(fHsh,mod,name);
+      CreateMakFile(name);
+      IF verbose THEN 
+        WriteString("... outfile is '");
+        WriteString(name); 
+	Write("'"); WriteLn;
+      END;
+      WLn; WMS("(* ==================================================== *)"); 
+      WLn; WMS("(*  Implementation  automatically produced by MkEnumIO  *)"); 
+      WLn; WMS("(* ==================================================== *)"); 
+      WLn;
+      WLn; WMS("IMPLEMENTATION MODULE "); WMH(fHsh); WMB(";");
+      WLn;
+      WLn; WMS("  IMPORT InOut, TextInOut, UxFiles;"); 
+      WLn; WMS("  FROM "); WMH(thisName); WMS(" IMPORT "); WMH(tHsh); WMB(";");
+      WLn; WMS("  FROM ConvTypes IMPORT ConvResults;"); 
+      WLn;
+    END WriteModHeader;
+
+    PROCEDURE WriteModTrailer;
+    BEGIN
+      WLn; WMS("  PROCEDURE Write(val : "); WMH(tHsh); WMS(");");
+      WLn; WMS("    VAR strng : ARRAY [0 .. 255] OF CHAR;");
+      WLn; WMS("  BEGIN");
+      WLn; WMS("    GiveStr(val,strng);");
+      WLn; WMS("    InOut.WriteString(strng);");
+      WLn; WMS("  END Write;");
+      WLn; 
+      WLn; WMS("  PROCEDURE TextWrite(fil : UxFiles.File;"); 
+      WLn; WMS("                      val : "); WMH(tHsh); WMS(");");
+      WLn; WMS("    VAR strng : ARRAY [0 .. 255] OF CHAR;");
+      WLn; WMS("  BEGIN");
+      WLn; WMS("    GiveStr(val,strng);");
+      WLn; WMS("    TextInOut.WriteString(fil,strng);");
+      WLn; WMS("  END TextWrite;");
+      WLn;
+      WLn; WMS("  PROCEDURE GiveStr(val : "); WMH(tHsh); WMB(";");
+      WLn; WMS("               VAR str : ARRAY OF CHAR);"); 
+      WLn; WMS("    VAR index : CARDINAL;"); 
+      WLn; WMS("        strIx : CARDINAL;");
+      WLn; WMS("  BEGIN");
+      WLn; WMS("    strIx := 0;");
+      WLn; WMS("    index := enumStart[val];");
+      WLn; WMS("    WHILE (stringTab[index] <> '') AND");
+      WLn; WMS("               (strIx <= HIGH(str)) DO");
+      WLn; WMS("      str[strIx] := stringTab[index];");
+      WLn; WMS("      INC(index); INC(strIx);");
+      WLn; WMS("    END;");
+      WLn; WMS("    IF strIx <= HIGH(str) THEN str[strIx] := '' END;");
+      WLn; WMS("  END GiveStr;"); 
+      WLn; 
+
+      IF inpReq THEN
+        WLn; WMS("  PROCEDURE Read(VAR val : "); WMH(tHsh); WMB(";");
+        WLn; WMS("                 VAR format : ConvResults);");
+        WLn; WMS("    VAR strng : ARRAY [0 .. 255] OF CHAR;");
+        WLn; WMS("  BEGIN");
+        WLn; WMS("    InOut.ReadString(strng);");
+        WLn; WMS("    TakeStr(strng,val,format);");
+        WLn; WMS("    termCh := InOut.termCh");
+        WLn; WMS("  END Read;");
+        WLn;
+        WLn; WMS("  PROCEDURE TextRead(fil : UxFiles.File;");
+        WLn; WMS("                     VAR val : "); WMH(tHsh); WMB(";");
+        WLn; WMS("                     VAR format : ConvResults);");
+        WLn; WMS("    VAR strng : ARRAY[0 .. 255] OF CHAR;");
+        WLn; WMS("  BEGIN");
+        WLn; WMS("    TextInOut.ReadString(fil,strng);");
+        WLn; WMS("    TakeStr(strng,val,format);");
+        WLn; WMS("    termCh := TextInOut.termCh");
+        WLn; WMS("  END TextRead;");
+        WLn;
+        WLn; WMS("  PROCEDURE TakeStr(str : ARRAY OF CHAR;");
+        WLn; WMS("                    VAR val : "); WMH(tHsh); WMB(";");
+        WLn; WMS("                    VAR format : ConvResults);");
+        WLn; WMS("    VAR index : CARDINAL;");
+        WLn; WMS("        strIx : CARDINAL;");
+        WLn; WMS("        match : BOOLEAN;");
+        WLn; WMS("        failure : BOOLEAN;");
+        WLn; WMS("  BEGIN");
+        WLn; WMS("    IF str[0] = '' THEN");
+        WLn; WMS("      format := strEmpty;");
+        WLn; WMS("    ELSE");
+        WLn; WMS("      val := MIN("); WMH(tHsh); WMS(");");
+        WLn; WMS("      match := FALSE;"); 
+        WLn; WMS("      failure := FALSE;");
+        WLn; WMS("      REPEAT");
+        WLn; WMS("        index := enumStart[val];");
+        WLn; WMS("        strIx := 0;");
+        WLn; WMS("        WHILE (stringTab[index] <> '') AND");
+        WLn; WMS("                    (str[strIx] <> '') AND");
+        
+        IF exact = TRUE THEN
+          WLn; WMS("          (stringTab[index] = str[strIx]) DO");
+        ELSE
+          WLn; WMS("          (CAP(stringTab[index]) = CAP(str[strIx])) DO");
+        END;
+
+        WLn; WMS("          INC(index); INC(strIx);"); 
+        WLn; WMS("        END;");
+        WLn; WMS("        IF (stringTab[index] = '') AND");
+        WLn; WMS("                (str[strIx] = '') THEN");
+        WLn; WMS("          match := TRUE;");
+        WLn; WMS("          format := strAllRight;"); 
+        WLn; WMS("        ELSIF (val = MAX("); WMH(tHsh); WMS(")) THEN");
+        WLn; WMS("          format := strWrongFormat;");
+        WLn; WMS("          failure := TRUE;");
+        WLn; WMS("        ELSE");
+	WLn; WMS("          INC(val);");
+        WLn; WMS("        END;");
+        WLn; WMS("     UNTIL ((match = TRUE) OR (failure = TRUE));");
+        WLn; WMS("   END;");
+        WLn; WMS("  END TakeStr;");
+        WLn;
+      END;
+
+      WLn; WMS("END "); WMH(fHsh); WMB(".");
+      WLn;
+
+      CloseMakFile();
+    END WriteModTrailer;
+
+    PROCEDURE Marker(VAR tp : TyNamDesc);
+    BEGIN
+      tp.sy := symSmbl;
+      IF symSmbl = ident THEN
+	tp.mNam := lexAtt.hashIx;
+        GetSymSmbl; (* ident *)
+      ELSIF symSmbl = dot THEN
+        tp.mNam := thisName;
+      END;
+      GetSymSmbl; (* dot or slash *)
+    END Marker; (* post : symSmbl = ident *)
+
+    PROCEDURE QualIdent(VAR tp : TyNamDesc);
+    BEGIN (* QualIdent = Marker ident. *)
+      Marker(tp);;
+      tp.iNam := lexAtt.hashIx;
+      GetSymSmbl; (* ident *)
+    END QualIdent;
+
+    PROCEDURE FieldSeq();
+    BEGIN
+      WHILE (symSmbl = ident) OR (symSmbl = nilSy) DO
+        IF symSmbl = ident THEN (* ordinary field *)
+          GetSymSmbl;
+          Type();
+        ELSE  (* create dummy IdDesc *)
+          GetSymSmbl; (* get past nilSy *)
+(**)      Check(caseSy); GetSymSmbl;
+          WHILE symSmbl = bar DO GetSymSmbl;
+            FieldSeq();
+          END; (* while *)
+(**)      Check(endSy); GetSymSmbl;
+(**)      Check(fixNum); (* and get type size *)
+          GetSymSmbl;
+        END; (* if *)
+      END; (* while *)
+    END FieldSeq;
+
+    PROCEDURE RecType(tp : TyNamDesc);
+    (* RecordType  = recordSy { Fields } endSy.
+       Fields      = ident Type | UnionType.
+       UnionType   = caseSy {bar {Fields}} endSy.             *)
+    BEGIN
+      GetSymSmbl;
+      FieldSeq();
+(**)  Check(endSy); GetSymSmbl;
+    END RecType;
+
+    PROCEDURE ProcType();
+    (* ProcType = procedureSy lPar {Formal} rPar [colon Type] *)
+    BEGIN
+      GetSymSmbl;
+(**)  Check(lPar); GetSymSmbl;
+      WHILE symSmbl <> rPar DO (* seqOf FormalType *)
+(**)    Check(charNum);
+        GetSymSmbl; 
+	Type();
+      END;
+      GetSymSmbl;
+      IF symSmbl = colon THEN 
+	GetSymSmbl; 
+	Type();
+      END;
+    END ProcType;
+
+    PROCEDURE Type();
+    (* Type = equals                  -- the last type
+            | QualIdent               -- some known type
+            | (plus QualIdent | nilSy) ActualType Size. 
+                                      -- some new type   *)
+      VAR count, index : CARDINAL;
+	  tpName : TyNamDesc;
+	  theRightOne : BOOLEAN;
+
+      VAR table : ARRAY [0 .. 255] OF Spellix;
+	  start, endSp : Spellix;
+	  ch : CHAR;
+    BEGIN
+      IF symSmbl = equals THEN 
+	GetSymSmbl; tpName := lastTyp;
+      ELSIF symSmbl IN SymbolSet{slash,ident,dot} THEN
+        QualIdent(tpName); (* modId not nec = thisMod *)
+      ELSE (* actual type *)
+        IF symSmbl = nilSy THEN
+          GetSymSmbl;
+        ELSE (* maybe must insert now *)
+(**)      Check(plus); GetSymSmbl;
+          QualIdent(tpName);
+        END; (* nilSy ==> anon type *)
+        CASE symSmbl OF (* can this be avoided if already known? *)
+        | lPar : GetSymSmbl;  (* an enumeration type *)
+	    theRightOne := (tpName.iNam = tHsh) AND (tpName.sy = dot);
+	    IF theRightOne THEN 
+	      WriteDefFile();
+	      WriteModHeader();
+	      typeFound := TRUE;
+	      count := 0;
+	      start := SpellingIndex(lexAtt.hashIx);
+              WHILE symSmbl = ident DO
+		table[count] := SpellingIndex(lexAtt.hashIx);
+	        INC(count);
+	        GetSymSmbl;
+              END;
+(**)          Check(rPar); GetSymSmbl;
+	      MarkInterimSpellix();
+	      endSp := InterimSpellix();
+	      WLn; WMS("  CONST tMx = "); WMC(endSp - start - 1); WMB(";");
+	      WLn; 
+	      WLn; WMS("  TYPE Index = ARRAY ");WMH(tHsh);WMS(" OF CARDINAL;"); 
+	      WLn; WMS("       StTab = ARRAY [0 .. tMx] OF CHAR;"); 
+	      WLn; 
+	      WLn; WMS("  CONST enumStart = Index{");
+	      FOR index := 0 TO count - 1 DO
+		IF index MOD 10 = 0 THEN WLn; WMB(ht) END;
+	        WMC(table[index] - start);
+		IF index <> count - 1 THEN WMS(", ");
+	  	ELSE 
+		  WLn; 
+		  WMS("    }; (* compile errors here mean that type '");
+		  WMH(tHsh); WMB("'"); 
+		  WLn; WMB(ht); 
+		  WMS("* has changed its cardinality since module '");
+		  WMH(fHsh); WMB("'"); 
+		  WLn; WMB(ht); 
+		  WMS("* was created. Rerun MkEnumIO to fix this module	*)");
+		  WLn;
+		END; 
+	      END;
+	      WLn; WMS("  CONST stringTab = StTab{"); 
+	      WLn; WMB(ht);
+	      FOR index := start TO endSp - 1 DO
+	        ch := StringTable(index);
+		IF ch = "" THEN 
+		  WMS('""');
+		  IF index >= endSp - 1 THEN 
+		    WMS("};");
+		    WLn;
+		  ELSE 
+		    WMB(","); WLn; WMB(ht);
+		  END;
+		ELSE
+		  WMB('"'); WMB(ch); WMB('"'); WMB(",");
+	 	END;
+	      END;
+	      WriteModTrailer();
+	    ELSE (* skip *)
+              WHILE symSmbl = ident DO GetSymSmbl END;
+(**)          Check(rPar); GetSymSmbl;
+	    END;
+        | lBrac : GetSymSmbl;
+(**)        Check(fixNum);
+            GetSymSmbl;
+(**)        Check(fixNum);
+            GetSymSmbl;
+            Type();
+	    GetSymSmbl;
+        | arraySy : GetSymSmbl;
+            Type();
+(**)        Check(ofSy); GetSymSmbl;
+            Type();
+        | notEq : GetSymSmbl;
+        | setSy : GetSymSmbl;
+            Type();
+        | pointerSy : GetSymSmbl;
+            Type();
+        | recordSy : 
+            RecType(tpName);
+        | procedureSy : 
+	    ProcType();
+        ELSE AbortMessage('bad type begin symbol in SYM',"");
+        END;
+(**)    Check(fixNum); (* and get type size *)
+	GetSymSmbl;
+      END;
+      lastTyp := tpName;
+    END Type;
+
+    PROCEDURE ConDef();
+    (* ConDef = constSy ident Value .
+       Value  = fixNum CharNum [Type] | charNum | floatNum 
+              | charLit | litstring | bigSetCon Type 
+	      | heapConst Type | nilSy. *)
+      VAR con : CARDINAL;
+	  spix : Spellix;
+	  heap : SYSTEM.ADDRESS;
+	  class : TyNodeClass;
+    BEGIN
+      GetSymSmbl; (* discard constSy *)
+      GetSymSmbl; (* discard ident *)
+        CASE symSmbl OF
+        | fixNum : (* stow value *)
+            GetSymSmbl;
+(**)        Check(charNum); (* value is tyClass of const *)
+            class := VAL(TyNodeClass,ORD(lexAtt.charValue));
+            GetSymSmbl;
+            IF (class = enums) OR (class = subranges) THEN 
+	      Type();
+            END;
+        | charNum :
+            GetSymSmbl;
+        | floatNum :
+            GetSymSmbl;
+        | litstring, charLit :
+            GetSymSmbl;
+        | bigSetCon : (* stow value and set typeDesc ptr... *)
+            GetSymSmbl;
+            Type();
+	| heapConst :
+	    GetSymSmbl; (* read past heapConst symbol *)
+            Type();
+        | nilSy :
+            GetSymSmbl;
+        ELSE AbortMessage('bad const declaration',"");
+        END; (* case *)
+    END ConDef;
+
+    PROCEDURE TypeDef();
+    (* TypeDef = typeSy ident Type. *)
+    BEGIN
+      GetSymSmbl; (* discard constSy *)
+      GetSymSmbl; (* discard ident *)
+      Type();
+    END TypeDef;
+
+    PROCEDURE VarDef();
+    (*  VarDef = varSy ident Type. *)
+    BEGIN
+      GetSymSmbl; (* discard *)
+      GetSymSmbl; (* discard ident *)
+      Type();
+    END VarDef;
+
+    PROCEDURE GetProcDef(tp : TyNamDesc);
+    (*  ProcDef = procedureSy ident Type. *)
+    BEGIN
+      GetSymSmbl; (* procedureSy *)
+(**)  Check(ident);
+      GetSymSmbl;
+      Type();
+    END GetProcDef;
+
+    PROCEDURE ProcDef();
+      VAR ty : TyNamDesc;
+    BEGIN
+      ty.sy := dot;
+      GetProcDef(ty);
+    END ProcDef;
+
+    TYPE ShortName = ARRAY [0 .. 7] OF CHAR;
+    TYPE TableType = ARRAY [CHR(0) .. CHR(34)] OF ShortName;
+
+    CONST table = TableType {
+	"ABS", "CAP", "CHR", "FLOAT", "LFLOAT", "SLOAT", "HIGH",
+	"MIN", "MAX", "ODD", "ORD", "SIZE", "TRUNC", "VAL",
+	"NEW", "DISPOSE", "LENGTH", "DEC", "EXCL", "HALT",
+	"ABORT", "INC", "INCL", "TSIZE", "ADR", "CAST",
+	"INCADR", "DECADR", "DIFADR", "SHIFT", "ROTATE",
+	"UNIXexit", "UNIXtime", "Assert", "CALL"};
+
+    PROCEDURE ConProc();
+    (* ConProc = upArrow ident ActualProc.              *)
+    (* ActualProc = charNum charNum -- standard procs   *)
+    (*            | Marker ProcDef [bar].               *)
+    (* Marker  = slash | dot | ident dot.               *)
+      VAR dummy : TyNamDesc;
+    BEGIN
+      GetSymSmbl; (* upArrow *)
+(**)  Check(ident);
+      GetSymSmbl; (* ident *)
+      IF symSmbl = charNum THEN (* stFunc or stProc *)
+        GetSymSmbl; (* charNum *)
+        GetSymSmbl; (* charNum *)
+      ELSE
+        Marker(dummy);
+	GetProcDef(dummy);
+        IF symSmbl = bar THEN
+          GetSymSmbl; (* bar *)
+        END;
+      END;
+    END ConProc;
+
+    PROCEDURE Definitions();
+    (* Definition = { (ConDef | TypeDef | ProcDef | VarDef) }. *)
+    BEGIN
+      LOOP
+        CASE symSmbl OF
+        | constSy : ConDef();
+        | typeSy  : TypeDef();
+        | varSy   : VarDef();
+        | procedureSy : ProcDef();
+        | upArrow : ConProc();
+        | endSy   : EXIT;
+        ELSE AbortMessage('bad SYM definition',"")
+        END;
+      END;
+    END Definitions;
+
+    PROCEDURE ParseSymbolFile;
+    (*   Unit = Header ModuleImports SymbolModule ImportObjects eofSy .
+         ModuleImports = lBrac {ident ModuleKey} rBrac .
+         SymbolModule  = moduleSy { Definition } endSy .        *)
+      VAR 
+          hsh : HashBucketType;
+
+    BEGIN (* assert: either mod not known or not loaded *)
+      InitSymScan; 
+      HeaderCheck();
+      IF (symSmbl = nilSy) THEN
+	(*
+	  this next marks the exportNodes of system modules
+          so as to ensure that they are not named in ref files 
+	*)
+	(*
+	  and externProcs of !LIBRARY (nonRec) modules so that 
+          they are not presumed to engage in indirect recursion 
+	*)
+        GetSymSmbl;
+      ELSIF symSmbl = bar THEN
+        GetSymSmbl;
+      ELSIF symSmbl = fromSy THEN (* !FOREIGN (macro) module *)
+        GetSymSmbl;
+	IF symSmbl = litstring THEN
+	  GetSymSmbl;
+	END;
+	(*
+	 *  and now test if it is also !INTERFACE FOR_C!
+	 *)
+	IF symSmbl = forSy THEN
+	  GetSymSmbl;
+	END;
+      END;
+      Check(lBrac); GetSymSmbl;
+      IF symSmbl = ident THEN 
+        GetSymSmbl; (* read past ident *)
+(**)    Check(keySy); GetSymSmbl; (* past keySy *)
+        WHILE symSmbl = ident DO
+          GetSymSmbl; (* read past ident *)
+(**)      Check(keySy); GetSymSmbl; (* past keySy *)
+        END; (* while *)
+      END;
+(**)  Check(rBrac);    GetSymSmbl;
+(**)  Check(moduleSy); GetSymSmbl;
+      Definitions();
+(**)  Check(endSy);    GetSymSmbl;
+      WHILE symSmbl < keySy DO GetSymSmbl END; (* also stops on eofSy *)
+(**)  Check(keySy); GetSymSmbl;
+(**)  Check(eofSy); CloseSymFile();
+    END ParseSymbolFile;
+
+    PROCEDURE ChopExtension(VAR str : ARRAY OF CHAR);
+      VAR ix : CARDINAL;
+    BEGIN
+      (*
+       *  if name has extension then remove it
+       *)
+      FOR ix := 0 TO LENGTH(str) - 1 DO
+	IF str[ix] = "." THEN str[ix] := "" END;
+      END;
+    END ChopExtension;
+
+  VAR str : ARRAY [0 .. 255] OF CHAR;
+      hsh : HashBucketType;
+      ok  : BOOLEAN;
+      arg : CARDINAL;
+
+  PROCEDURE Usage;
+  BEGIN
+    ErrOutput.WriteString
+#ifdef dotnet86
+		("#MkEnumIO: usage: mkenumio [/cinvx] <modname.typename>");
+#else  dotnet86
+		("#MkEnumIO: usage: mkenumio [-cinvx] <modname.typename>");
+#endif dotnet86
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("  <typename> must be the name of the enumeration type in the correct case");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("  <modname> may be a ... ");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("   * mixed case module name");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("   * lower case module name");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("   * filename (without extension)");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("#MkEnumIO: Output files are ..."); ErrOutput.WriteLn;
+    ErrOutput.WriteString("  <typename>io.def"); ErrOutput.WriteLn;
+    ErrOutput.WriteString("  <typename>io.mod"); ErrOutput.WriteLn;
+    ErrOutput.WriteString("  where <typename> is moved to lower case"); 
+    ErrOutput.WriteLn;
+#ifdef dotnet86
+    ErrOutput.WriteString("#MkEnumIO: switch: /c (case insensitive) match of input"); 
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   /i (input) procedures are created");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   /n (no input) procedures");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   /v (verbose) writes filenames to std output");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   /x (exact) match of input");
+#else  dotnet86
+    ErrOutput.WriteString("#MkEnumIO: switch: -c (case insensitive) match of input"); 
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   -i (input) procedures are created");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   -n (no input) procedures");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   -v (verbose) writes filenames to std output");
+    ErrOutput.WriteLn;
+    ErrOutput.WriteString("                   -x (exact) match of input");
+#endif dotnet86
+    ErrOutput.WriteLn;
+    UNIXexit(1);
+  END Usage;
+
+  PROCEDURE GetTypeName(str : ARRAY OF CHAR;
+		    VAR nam : ARRAY OF CHAR);
+    VAR ix, tx : CARDINAL;
+  BEGIN
+    ix := 0; 
+    tx := 0;
+    WHILE (str[ix] <> "") AND (str[ix] <> ".") DO INC(ix) END;
+    IF str[ix] = "." THEN INC(ix) END;
+    WHILE str[ix] <> "" DO
+      nam[tx] := str[ix]; INC(ix); INC(tx);
+    END;
+    nam[tx] := "";
+  END GetTypeName;
+
+  PROCEDURE GetFileName(str : ARRAY OF CHAR;
+		    VAR nam : ARRAY OF CHAR);
+    VAR ix, tx : CARDINAL;
+  BEGIN
+    ix := 0; 
+    tx := 0;
+    WHILE (str[ix] <> "") AND (str[ix] <> ".") DO INC(ix) END;
+    IF str[ix] = "." THEN INC(ix) END;
+    WHILE str[ix] <> "" DO
+      nam[tx] := str[ix]; INC(ix); INC(tx);
+    END;
+    nam[tx] := "I"; INC(tx);
+    nam[tx] := "O"; INC(tx);
+    nam[tx] := "";
+  END GetFileName;
+
+  PROCEDURE MoreRecent(hsh : HashBucketType) : BOOLEAN;
+    VAR defTime, symTime : CARDINAL;
+        found : BOOLEAN;
+        symPath : ARRAY [0 .. 1023] OF CHAR;
+        absPath : ARRAY [0 .. 1023] OF CHAR;
+  BEGIN
+    EnvironString("M2SYM",symPath);
+    FindFileNameOnPath(hsh,def,symPath,absPath,ok);
+    ModifyTime(absPath,defTime,found);
+    FindFileNameOnPath(hsh,syx,symPath,absPath,ok);
+    ModifyTime(absPath,symTime,found);
+    RETURN (defTime > symTime);
+  END MoreRecent;
+
+  VAR symName : MiddleString;
+
+BEGIN
+  inpReq := TRUE; (* default input procedures *)
+  exact := TRUE;  (* default exact match *)
+
+  arg := ArgNumber();
+#ifdef dotnet86
+  IF arg < 1 THEN Usage END;
+  FOR argcount := 1 TO (arg-1) DO
+      GetArg(argcount-1,str);
+      IF (str[0] = "/") OR (str[0] = "-") THEN
+#else  dotnet86
+  IF arg < 2 THEN Usage END;
+  FOR argcount := 1 TO (arg-2) DO
+      GetArg(argcount,str);
+      IF str[0] = "-" THEN
+#endif dotnet86
+         IF str[1] = '' THEN Usage; END;
+         ptr := 1;
+         WHILE str[ptr] <> '' DO
+           CASE str[ptr] OF
+           | 'c','C' : exact := FALSE;
+           | 'i','I' : inpReq := TRUE;
+           | 'n','N' : inpReq := FALSE;
+           | 'v','V' : verbose := TRUE;
+           | 'x','X' : exact := TRUE;
+           ELSE Usage;
+           END;
+           INC(ptr);
+        END;
+      ELSE Usage; END;
+  END;
+
+  GetArg(arg-1,str); 
+  GetTypeName(str,tNam);
+  IF tNam[0] = "" THEN
+    ErrOutput.WriteString("#MkEnumIO: no type name given");
+    ErrOutput.WriteLn;
+    Usage;
+  END;
+  EnterString(tNam,tHsh);
+  GetFileName(str,fNam);
+  EnterString(fNam,fHsh);
+  ChopExtension(str);
+  EnterString(str,hsh);
+  OpenSymFile(hsh,symName,ok);
+  IF NOT ok THEN 
+    ErrOutput.WriteString("symbol file for '");
+    ErrOutput.WriteString(str);
+    ErrOutput.WriteString("' not found");
+    ErrOutput.WriteLn;
+    AbortMessage("","");
+  ELSE 
+    IF MoreRecent(hsh) THEN
+      ErrOutput.WriteString("#MkEnumIO: WARNING ");
+      ErrOutput.WriteString(str);
+      ErrOutput.WriteString(".def is more recent then ");
+      ErrOutput.WriteString(str);
+      ErrOutput.WriteString(".syx");
+      ErrOutput.WriteLn;
+    END;
+    typeFound := FALSE;
+    ParseSymbolFile();
+    IF NOT typeFound THEN
+      AbortMessage("type was not found ",tNam);
+    END;
+  END;
+END MkEnumIO.

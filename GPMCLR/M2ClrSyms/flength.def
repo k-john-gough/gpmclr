@@ -1,0 +1,22 @@
+(* ==================================================== *
+ *							*
+ *		GPM File Utility Module			*
+ *							*
+ *	original code from StdFiles for COCO/R		*
+ *	adapted by kjg, December 1996			*
+ *							*
+ * ==================================================== *)
+
+FOREIGN DEFINITION MODULE FLength;
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+  IMPORT UxFiles;
+
+  PROCEDURE Length(f : UxFiles.File) : CARDINAL;
+  (* post : if f is open return length, else 0 *)
+
+  PROCEDURE SeekEnd(f : UxFiles.File; VAR ok : BOOLEAN);
+  (* post : file is postioned at end, or ok = false *)
+
+  PROCEDURE Rename(old, new : ARRAY OF CHAR;
+		   VAR  ok  : BOOLEAN);
+END FLength.

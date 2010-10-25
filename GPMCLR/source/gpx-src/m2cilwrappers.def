@@ -1,0 +1,35 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*    Emit Wrapper functions for String to Array conversions    *)
+(*                                                              *)
+(*    (c) copyright 1996 Faculty of Information Technology.     *)
+(*                                                              *)
+(*      original module : kjg July 1996   (M2DcfWrappers)       *)
+(*      modifications   : kjg Nov. 2003   (M2CilWrappers)       *)
+(*                                                              *)
+(****************************************************************)
+
+DEFINITION MODULE M2CilWrappers;
+  FROM M2NodeDefs IMPORT IdDesc, TypeDesc;
+  FROM M2Designators IMPORT DesigRec;
+  FROM GenSequenceSupport IMPORT Sequence;
+
+  (* This procedure is called during static semantic analysis once *)
+  (* the need for a wrapper is recognized. It mutates the desig    *)
+  (* expression to call the wrapper, and mutates the actuals seq.  *)
+  (* The arg list is modified in two ways: If the target is a      *)
+  (* nested procedure, the static link becomes an explicit zero-th *)
+  (* parameter (since the *wrapper* is not nested!), and the real  *)
+  (* target of the call is a procedure value as final argument.    *)
+
+  PROCEDURE MkWrap(VAR desig : DesigRec;   (* procedure identifier *)
+		   VAR acSeq : Sequence;   (* actual param list    *)
+		       exTyp : TypeDesc;   (* procedure typeDesc   *)
+		       thisP : IdDesc);	   (* current procDesc     *)
+		
+  (* This procedure writes out the wrapper procedures as CIL.      *)
+  PROCEDURE WriteWrappers();
+	
+END M2CilWrappers.

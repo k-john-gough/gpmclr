@@ -1,0 +1,64 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*        Generation of Unique Names for Bootstrap Version      *)
+(*                                                              *)
+(*      (c) copyright 1988 Faculty of Information Technology    *)
+(*                                                              *)
+(*      original module : kjg June 1988                         *)
+(*      modifications   : addition of tag generation  29-Jun    *)
+(*                      : making linker scope visible 10-Jul    *)
+(*      last modified   : adding MakeCacheName()      10-Jul    *)
+(*                                                              *)
+(****************************************************************)
+(*              MODIFIED FOR NATIVE CODE VERSIONS		*)
+(****************************************************************
+$Log: m2namgen.def,v $
+Revision 1.3  1995/09/15 07:43:53  gough
+new procedure MakeNewCurrent creates an "anon" temp in the current
+scope, with the TyNodeClass as specified.
+
+# Revision 1.2  1995/03/02  08:49:13  gough
+# new procedure MakeTempName
+#
+# Revision 1.1  1994/04/07  05:03:39  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2NamGenerate;
+FROM M2NodeDefs IMPORT IdDesc, IdTree, TypeDesc, TyNodeClass;
+FROM M2Alphabets IMPORT HashBucketType;
+
+  PROCEDURE MakeNameUnique(VAR scope : IdTree;
+                               iPtr  : IdDesc);
+  (* precondition  : iPtr <> NIL (scope empty is ok)            *)
+  (* postcondition : iPtr is placed in scope, after generation  *)
+  (*                 of a unique name if that is necessary      *)
+
+    PROCEDURE MakeTempName(iPtr : IdDesc);
+  (* postcondition : iPtr has a unique name assigned to it      *)
+
+(*
+ *  PROCEDURE MakeWithName(iPtr : IdDesc);  --  deleted
+ *
+ *  PROCEDURE MakeTagName(tPtr : TypeDesc); --  deleted
+ *)
+
+  PROCEDURE MakeNewCurrent(cls : TyNodeClass;
+		       VAR new : IdDesc);
+
+  VAR linkScope : IdTree; (* the newly constructed global scope *)
+      callSmbl  : HashBucketType; (* entry point name of module *)
+
+  PROCEDURE CreateCallName(isBase : BOOLEAN);
+  (* create callSymbol name and place in linkScope		*)
+  (* If isBase, then name is "Start<...>" else "Init<...>"      *)
+
+  PROCEDURE MakeLinkerName(iPtr : IdDesc);
+  (* precondition  : iPtr^.varClass IN {extern,export}          *)
+  (* postcondition : iPtr^.name is placed in the linker scope   *)
+  (*                 if name is not unique an error is emitted  *)
+
+END M2NamGenerate.

@@ -1,0 +1,126 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*                 Code-generator definitions                   *)
+(*                                                              *)
+(*     (c) copyright 1990 Faculty of Information Technology     *)
+(*                                                              *)
+(*      original module : kjg January 1990                      *)
+(*      modifications   : D-Code version kjg Aug 1990           *)
+(*								*)
+(*   =============== merged mips and i386 source ============	*)
+(*			   kjg 22 Mar 93			*)
+(*                                                              *)
+(****************************************************************
+$Log: m2ddefin.def,v $
+Revision 1.5  1995/10/10 23:13:56  lederman
+new V3 DCodes for HugeInt support
+
+# Revision 1.4  1995/01/05  05:38:35  gough
+# new DCode "switch" replaces "jump"
+#
+# Revision 1.3  1994/10/12  04:42:42  gough
+# add new instruction "assert" for future use (DGEN already has...)
+#
+# Revision 1.2  1994/07/01  04:05:27  lederman
+# extended Object with 32-bit types & updated Instruction with new D-Codes
+# removed 'bump1' & 'bumpN' and various unused (& misleading) constants
+#
+# Revision 1.1  1994/04/07  04:46:39  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2DDefinitions;
+
+  FROM Types IMPORT SHORTCARD;
+
+  TYPE  TempIndex = SHORTCARD;
+	LabelType = SHORTCARD;
+
+	Relops	  = (lsR,leR,eqR,gtR,geR,neR,inR);
+
+	ModeEnum  = (none, intV, crdV);
+
+	Object    = (
+		byteInt,	(* an 8-bit integer   *)
+		byteCard, 	(* an 8-bit unsigned  *)
+		shortInt, 	(* a 16-bit integer   *)
+		shortCard, 	(* a 16-bit unsigned  *)
+		longInt, 	(* a 32-bit integer   *)
+		longCard, 	(* a 32-bit unsigned  *)
+		word, 		(* uninterpreted word *)
+		hugeInt,
+		float, 		(* ieee single float  *)
+		double);	(* ieee double float  *)
+ 
+  (* ================================================== *)
+  (*     WARNING -- NOT SAME ENUMERATION AS GPM-PC	*)
+  (* ================================================== *)
+  TYPE
+    Instruction =
+      ( error, lineNum, pop1, dup1, 
+	cutPars,(* number *)
+	addOff, (* offset *)
+	addAdr,	
+	blkPar, mkPar, mkDstP, pshDstP,
+	mkTmp, 	(* offset *)
+	pshTmp, (* offset *)
+	pshZ,
+	pshLit, (* number *)
+	pshAdr, (* ident  *)
+	pshFP,  (* offset *)
+	pshDsp, (* index, offset *)
+	derefUB, derefSB, derefU16, derefS16, derefU32, derefS32,
+	derefW,  derefL, derefF,  derefD,
+	assignB, assign16, assign32, assignW, assignL, assignF, assignD, 
+	negate,	 negL, bitNeg, boolNeg, abs, absL, blkCp,
+	add,	(* mode *)	addL,
+	sub,    (* mode *)	subL,
+	mul,    (* mode *)	mulL,
+	mod,    (* mode *)	modL,
+	div,    (* mode *)	divL,
+	rem,    (* mode *)	remL,
+	slash,  (* mode *)	slashL,
+	shiftV, shLeft, shRightU, shRightS, rotate, orWrd, andWrd, xorWrd,
+	branch, (* label *)
+	brTrue, (* label *)
+	brFalse, (* label *)
+        relEQ, relNE, 
+	setIn, setLE, setGE, setIncl, setExcl,
+	crdLS, crdLE, crdGT, crdGE,
+        intLS, intLE, intGT, intGE,
+	popCall, switch, exit,
+	trap,	(* label *)
+	call, (* label *)
+
+	pshRetUB, pshRetSB, pshRetU16, pshRetS16, pshRetU32, pshRetS32, 
+	pshRetW, pshRetL, pshRetF, pshRetD,
+
+	popRetW, popRetL, popRetF, popRetD,
+
+	longRel, uToS64, iToS64, lToWrd,
+
+	absFlt, absDbl, addFlt, subFlt,
+	mulFlt, divFlt, addDbl, subDbl,
+	mulDbl, divDbl, 
+	uToFlt, uToDbl, iToFlt, iToDbl, 
+	fToDbl, dToFlt, 
+	fltRel,	(* relop *)
+	dblRel, (* relop *)
+	fTrunc, dTrunc,
+	fRound, dRound,
+	fFloor, dFloor,
+	negFlt, negDbl,
+
+	lToDbl, dTruncL, dFloorL, dRoundL,
+
+	pshFi,	(* number *)
+	popFi,	(* number *)
+
+	flatten, makeAdr, swap, test, assert, endP, endF);
+
+  (* ================================================== *)
+
+END M2DDefinitions.

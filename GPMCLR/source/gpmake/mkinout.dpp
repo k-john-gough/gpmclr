@@ -1,0 +1,167 @@
+(* -- RCS header --
+	$Log:	mkinout.dpp,v $
+Revision 1.2  93/11/03  08:58:32  mboss
+Added Alpha changes
+
+Revision 1.1  93/03/25  14:32:22  mboss
+Initial revision
+
+*)
+##
+#  include machine.mpp
+##
+##      include the processor characteristic file
+##
+
+(****************************************************************)
+(*                                                              *)
+(*                Modula-2 Compiler Source Module               *)
+(*                                                              *)
+(*                     Input-Output Routines.                   *)
+(*                                                              *)
+(*     (c) copyright 1988 Faculty of Information Technology     *)
+(*                                                              *)
+(*        original module : kjg july 1987                       *)
+(*        modifications   : 24-Mar-88: adding symbol file write *)
+(*        last modified   : 17-July revised error reporting     *)
+(*			  :  9-Jan-90 new proc EmitFileName     *)
+(*			  : 13-Apr-90 new proc DiagName		*)
+(*                        : Feb-91    debugOn flag added        *)
+(*								*)
+(*               CUT DOWN VERSION FOR PC GPMAKE                 *)
+(*                      dwc September 1991                      *)
+(*			jrh 07-May-92 FileNameString, etc	*)
+(*                      : kjg 03-Aug-92 uses new GpFiles procs  *)
+(*                                                              *)
+(****************************************************************)
+
+# ifdef gpmpc
+#   define pcCode
+# endif gpmpc
+# ifdef pcnative
+#   define pcCode
+# endif pcnative
+
+
+# ifdef pcCode
+#   define ErrOutput Terminal
+# else pcCode
+#   define ErrOutput StdError
+# endif pcCode
+
+DEFINITION MODULE MkInOut;
+
+  IMPORT SYSTEM;
+  FROM GpFiles IMPORT fileNameLength;
+  FROM MkAlphabets IMPORT HashBucketType, Spellix, TermSymbols;
+
+  CONST
+#ifdef pcCode
+    longMax = 255;	(* Upper bound of (very) long strings *)
+    middleMax = 128;	(* Upper bound of middle-size strings -
+			   $M2SYM & single path names *)
+    shortMax = 50;	(* Upper bound of short strings - 
+			   args, error messages *)
+    fileNameMax = 14;	(* Upper bound of file names -
+			   ".\" (truncated) identifier "." extension *)
+#else pcCode
+    longMax = 4095;	(* Upper bound of (very) long strings *)
+    middleMax = 255;	(* Upper bound of middle-size strings -
+			   $M2SYM & single path names *)
+    shortMax = 50;	(* Upper bound of short strings - 
+			   args, error messages *)
+    fileNameMax = fileNameLength + 4;	
+			(* Upper bound of file names - 
+			   identifier + extension *)
+#endif pcCode
+
+  TYPE
+    LongIndex      = [0 .. longMax];
+    MiddleIndex    = [0 .. middleMax];
+    ShortIndex     = [0 .. shortMax];
+    FileNameIndex  = [0 .. fileNameMax];
+    LongString     = ARRAY LongIndex     OF CHAR;
+    MiddleString   = ARRAY MiddleIndex   OF CHAR;
+    ShortString    = ARRAY ShortIndex    OF CHAR;
+    FileNameString = ARRAY FileNameIndex OF CHAR;
+
+  TYPE  Position = RECORD line, pos : CARDINAL END;
+
+  VAR   lastPos  : Position; (* position of last symbol *)
+        debugOn  : BOOLEAN;  (* in debug mode ?  *)
+
+(* --- main input file procedures ----------------------------- *)
+
+  PROCEDURE OpenInput;
+  (* in case of errors, lexErrors is set in flags *)
+
+  PROCEDURE BaseName(VAR name : ARRAY OF CHAR);
+  PROCEDURE SetAppName(name : ARRAY OF CHAR);
+
+  PROCEDURE OpenDefOrModFile (name : ARRAY OF CHAR);
+  PROCEDURE CloseDefOrModFile; 
+
+  PROCEDURE ReadCh(VAR ch : CHAR);
+  (* reads a character from the main input stream *)
+
+  PROCEDURE MarkPosAndReadCh(VAR ch : CHAR);
+  (* the current stream position is marked, and
+     the next character in the stream is fetched  *)
+
+  PROCEDURE DiagName(nam : HashBucketType);
+  (* write name to ErrOutput *)
+
+(* --- symbol file procedures --------------------------------- *)
+
+  PROCEDURE OpenSymFile(modHash : HashBucketType;
+			VAR out : MiddleString;
+                        VAR  ok : BOOLEAN);
+
+  PROCEDURE CloseSymFile();
+
+  PROCEDURE ReadSb(VAR ch : SYSTEM.BYTE);
+  (* reads a character from the sym-file stream *)
+
+(* --- mak file procedures --------------------------------- *)
+
+  PROCEDURE OpenMakFile;
+
+  PROCEDURE CreateMakFile (makName : ARRAY OF CHAR);
+
+  PROCEDURE GetMakSymPos() : CARDINAL;
+  (* returns the file position of the symbol about to be scanned *)
+
+  PROCEDURE GetMakFilePos() : CARDINAL;
+  (* return the actual file position *)
+
+  PROCEDURE SetMakFilePos(pos : CARDINAL);
+
+  PROCEDURE WriteMakString (str : ARRAY OF CHAR);
+
+  PROCEDURE WriteMakKey (key : CARDINAL);
+
+  PROCEDURE ReadMb (VAR byte : SYSTEM.BYTE);
+  (* reads a byte from the make file stream *)
+
+  PROCEDURE WriteMb (byte : SYSTEM.BYTE);
+
+  PROCEDURE CloseMakFile;
+
+  PROCEDURE WriteStringToTempFile (str : ARRAY OF CHAR);
+
+  PROCEDURE ReadStringFromTempFile (VAR str : ARRAY OF CHAR);
+
+(* --- abort procedures --------------------------------------- *)
+
+  PROCEDURE AbortMessage(str1,str2 : ARRAY OF CHAR);
+  (* outputs message to stdErr stream and aborts *)
+
+(* --- reference file procedures -----------------------------  *)
+
+  PROCEDURE OpenRefFile(modHash : HashBucketType; 
+			VAR out : MiddleString;
+			VAR  ok : BOOLEAN);
+
+  PROCEDURE CloseRefFile;
+
+END MkInOut.   

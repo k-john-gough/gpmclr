@@ -1,0 +1,502 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*                   Syntax Tree Node Definitions               *)
+(*								*)
+(*    (c) copyright 1988 Faculty of Information Technology      *)
+(*								*)
+(*      original module : Feb 1988 (M2Comp.idl @ 21-Feb-88)     *)
+(*      modifications   : data structs for calls list 5-Jun-88  *)
+(*                      : extra field for externProc 03-Jul-88  *)
+(*                      : moving subranges to top of            *)
+(*                        tyNodeClass enumeration    27-Jul-88  *)
+(*                      : adding tailRecursive attribute to     *)
+(*                        Attribute type.  kjg,jhol  04-Aug-88  *)
+(*                      : add TyClassSet, IdClassSet 28-Aug-88  *)
+(*                      : revise cache address field 04-Oct-88  *)
+(*                      : revised form for IdDescs of open      *)
+(*                        arrays for access to HIGH  08-Oct-88  *)
+(*                      : global symKeyValue         25-Oct-88  *)
+(*                      : stdBkt etc moved to M2NameHandler     *)
+(*                        add system to exportNode   17-Nov-88  *)
+(*                      : library and nonLeaky tags  19-Nov-88  *)
+(*                      : add alignMask to TypeRec   02-Dec-88  *)
+(*                      : add tempSize to StrucRec   31-Dec-88  *)
+(*                      : adding new std procs       22-Feb-89  *)
+(*                      : resolved types, etc        09-Mar-89  *)
+(*			: frame fields in IdRec      18-Apr-89  *)
+(*			: usedBkts, InsertAndMark..  27-May-89  *)
+(*			: fwdHeader tag and node     11-Aug-89  *)
+(*			: uplevelThreat flag	     15-Sep-89  *)
+(*			: fieldOffset, unionSpx       7-Oct-89  *)
+(*			: new constant infinity	     26-Feb-90  *)
+(*			: new flags needs*, saveLink  8-Mar-90  *)
+(*			: new idClass val regVarNode 16-Mar-90  *)
+(*			: new field levLev in IdDesc 15-Jun-90  *)
+(*			: new semantics for Insert   13-Jul-90  *)
+(*			: anonTypes seq for C-vers   14-Aug-91  *)
+(*			: jrh fwdMod IdClass added   12-Apr-92  *)
+(*			:     fwdTargets for unknown		*)
+(*								*)
+(*   =============== merged mips and i386 source ============	*)
+(*			   kjg 22 Mar 93			*)
+(*								*)
+(*                      : kjg extra attributes for CLR version  *)
+(*                            added June-December 2003.         *)
+(*								*)
+(****************************************************************
+$Log: m2nodede.def,v $
+Revision 1.15  1997/01/16 04:41:46  gough
+        new procedure InsertByName, which inserts an IdDesc into a
+        scope based on the given hashBucketNumber, rather than the
+        name of the IdDesc.  New IdDesc type posParNode, new field
+        linkName.  MakeFormal takes another parameter, the typeName.
+
+Revision 1.14  1996/11/27 02:10:13  lederman
+added stuff for exceptions to StrucRec - also the nestBlks & codeBlkList STRINGs
+
+Revision 1.13  1996/10/09 05:52:22  lederman
+removed unused hdrSpx field
+
+Revision 1.12  1996/09/20 08:05:17  lederman
+move appendClass to StatDesc
+
+Revision 1.11  1996/09/19 07:59:22  lederman
+add 'appendClass' field to TypeDesc to classify second param. of APPEND
+
+Revision 1.10  1996/08/07 23:42:39  gough
+new standard proc VARSTRS.CUT
+
+Revision 1.9  1996/07/29 23:56:46  gough
+new type class stringTs for generic strings
+
+Revision 1.8  1996/01/08 05:22:51  gough
+reorganisation of Booleans to use a set, plus new field hiDesc for subranges
+
+# Revision 1.6  1995/03/23  22:57:22  gough
+# remove highChain field for variables, use consistent "nextHigh" pointer
+#
+# Revision 1.5  1995/03/14  01:18:24  gough
+# new component "adjustSeq" to procedure body information
+#
+# Revision 1.4  1994/12/01  00:27:49  lederman
+# add endIdLineNumber
+#
+# Revision 1.3  1994/11/15  04:33:00  gough
+# new field origNam in IdRec, remove cshIndex field
+#
+# Revision 1.2  1994/06/20  06:44:12  gough
+# new field ptrOffset for value fixed array params
+#
+# Revision 1.1  1994/04/07  05:05:57  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2NodeDefs;
+  IMPORT SYSTEM, Types;
+  FROM GenSequenceSupport IMPORT Sequence;
+  FROM M2Alphabets IMPORT Spellix, HashBucketType, LexAttType,
+                          ModStateFlags, ModStateSet;
+  FROM M2NameHandler IMPORT UsedSetPtr;
+(* ----------------------------------------------------- *)
+
+(* pointers to the various node types *)
+TYPE    IdTree    = POINTER TO TreeRec;
+        IdDesc    = POINTER TO IdRec;
+        TypeDesc  = POINTER TO TypeRec;
+        StrucTree = POINTER TO StrucRec;
+
+(* ----------------------------------------------------- *)
+
+TYPE	LoopJunk   = POINTER TO RECORD
+		       src : IdDesc;
+		       dst : IdDesc;
+		       lim : IdDesc;
+		     END;
+
+(* ----------------------------------------------------- *)
+TYPE    TreeRec = RECORD
+                    name  : HashBucketType;
+                    ident : IdDesc;
+                    left, right : IdTree;
+                  END;
+
+PROCEDURE InsertRef(VAR t : IdTree;
+                       id : IdDesc;
+                   VAR ok : BOOLEAN);
+(* precondition  : t is a valid tree (possibly empty)    *)
+(* postcondition : id is inserted in tree, ok is false   *)
+(*                 if _key_ was already in the tree but  *)
+(*		   id was not in the treee. If global    *)
+(*                 state demands, object is also	 *)
+(*                 inserted in appropriate unit* list    *)
+(*		   If id was already in tree ok is TRUE  *)
+(* ----------------------------------------------------- *)
+
+PROCEDURE InsertByName(VAR tree : IdTree;
+			   hash : HashBucketType;
+                           idnt : IdDesc;
+                       VAR ok   : BOOLEAN);
+(* precondition  : t is a valid tree (possibly empty)    *)
+(* postcondition : id is inserted in tree, using hash as *)
+(*		   the key, rather than idnt^.name.	 *)
+(* ----------------------------------------------------- *)
+
+PROCEDURE StartImportList();
+(* precondition  : compile unit is a definition part     *)
+PROCEDURE StartExportList();
+(* precondition  : StartImportList called previously     *)
+(* postcondition : unitImports/unitExports list is 
+                   initialized. Future calls of
+                   InsertRef will link to this list.     *)
+PROCEDURE SuspendList(); (* used to stop enum constants  *)
+PROCEDURE ResumeList();  (* from being included in lists *) 
+
+(* ----------------------------------------------------- *)
+
+TYPE    IdNodeClass = (unknown, constNode, typeNode, varNode, 
+                       fieldNode, modNode, exportNode, stProc, stFunc,
+                       procNode,     (* proc or func      *)
+                       procHeader,   (* header of export  *)
+                       externProc,   (* header of import  *)
+		       fwdHeader,    (* header of fwdProc *)
+		       fwdMod,       (* fwd import module *)
+		       conProc,      (* procedure alias   *)
+		       posParNode,   (* positional param. *)
+                       overload,
+                       cilWrapper);
+
+        IdClassSet  = SET OF IdNodeClass;
+
+
+TYPE    FormalClass  = (auto, static, export, extern, (* for variables  *)
+          valForm, varForm, openValForm, openVarForm,
+          (* an optimization depends on this ordinal sequence *)
+	  openHiForm);
+
+TYPE    StandardProcs = (* standard functions *)
+               (absP, capP, chrP, 
+		floatP, lfloatP, sfloatP,
+		highP, minP, maxP, 
+                oddP, ordP, sizeP, truncP, valP, newP, disP, lengthP,
+		intP,
+                        (* standard proper procs *)
+                decP, exclP, haltP, abortP, incP, inclP,
+                        (* system procs and funcs *)
+                tsizeP, adrP, castP, addAdrP, 
+		subAdrP, difAdrP, shiftP, rotateP,
+		entierP, roundP,
+			(* ProgArgs procedures *)
+		exitP, timeP, assertP, preconP,
+			(* HugeInts procedures *)
+		htruncP, hroundP, hentierP, hugeP,
+			(* StringTypes procedure *)
+		appendP, concatP, resetP);
+
+TYPE VarUses = (directUse,defined,uplevAcc,uplevThr,
+			varParThr,exceptionDescriptor);
+     UsesSet = SET OF VarUses;
+
+TYPE    IdRec   = RECORD
+                    name     : HashBucketType;
+		    linkName : HashBucketType;
+		    clrName  : HashBucketType;
+                    CASE idClass : IdNodeClass OF
+		    | posParNode :
+			parType  : TypeDesc;
+			posIndex : CARDINAL;
+                    | constNode :
+                        conType  : TypeDesc;
+                        conValue : LexAttType;
+                    | typeNode : 
+                        typType : TypeDesc;
+                    | varNode :
+                        varType   : TypeDesc;
+		  	varOffset : INTEGER;
+			decFrame  : IdDesc;	(* declarative scope  *)
+			varUseSet : UsesSet;
+			hiDepth   : Types.Card16;
+			lexLev    : [0 .. 15];
+			normalRef : BOOLEAN;	(* referenced in normal part *)
+		                                (* subsequent reference in   *)
+                                                (* except causes varParThr   *)
+                                                (* to be set.                *)
+                        CASE varClass : FormalClass OF
+                        | extern : origMod  : IdDesc;
+                        | openValForm .. openHiForm :
+                            nextHigh  : IdDesc;
+			| valForm :
+			    ptrOffset : INTEGER;
+			   (* after the copy, varOffset is ofst of *)
+			   (* the copy. This is still the ref ofst *)
+                        ELSE (* nothing *)
+			    enclFrm  : IdDesc;
+                        END;
+                    | fieldNode :
+                        fieldType : TypeDesc;
+                        fieldOffset : INTEGER;
+                        unionSpx    : INTEGER; (* in the bootstrap *)
+                        (* version this holds variant field prefix *)
+                    | procHeader, procNode, fwdHeader, externProc,
+		      modNode, fwdMod, cilWrapper : 
+		      (* some of the code of the compiler relies on the     *)
+		      (* fields "scope" and "exports" using the same offset *)
+                        CASE (* same tag *) : IdNodeClass OF
+                        | externProc : module   : IdDesc;
+				       extAlias : Spellix;
+                                       nonLeaky : BOOLEAN; (* ==> nonRec *)
+                        ELSE (* procHeader, procNode, modNode, fwdMod *)
+			  scope    : IdTree;
+                          uphill   : IdDesc;
+                          body     : StrucTree;
+                        END;
+                        CASE (* same tag *) : IdNodeClass OF
+                          procNode, procHeader, externProc : 
+                                  procType : TypeDesc;
+                                  exStRc   : TypeDesc; (* CLR version only *)
+                                 (*  The "exStRc" field holds the type *)
+                                 (*  descriptor for the explicit,      *)
+                                 (*  statically allocated record that  *)
+                                 (*  holds all the uplevel-addressed   *)
+                                 (*  data for the CLR version.         *)
+                        | modNode, fwdMod :
+				  outside  : IdDesc;
+				  fwdImports : Sequence; (* of IdDesc *)
+                        ELSE END;
+		       (* 
+			* Activation record in which local vars exist. 
+			* For procs this is the proc's own frame. For 
+			* nested modules it is the frame of the closest
+			* enclosing proc (dynamic modules), or is the
+			* thisCompileUnit "frame" (static modules).
+			*)
+			frame    : IdDesc; 
+		    | exportNode :
+                        exports  : IdTree;
+                        keyValue : CARDINAL;
+			libSpx   : Spellix; (* (or 0) only if macro! *)
+                        loaded   : BOOLEAN; (* symfile already known *)
+                        system   : BOOLEAN; (* impl. known to comp.  *)
+                        library  : BOOLEAN; (* procs are non recurs. *)
+                        macro    : BOOLEAN; (* ==> C implementation  *)
+                        direct   : BOOLEAN; (* ==> C interface mod   *)
+                        retCut   : BOOLEAN; (* ==> callee cuts pars  *)
+                    | stProc, stFunc : procVal : StandardProcs;
+		    | conProc        : procId  : IdDesc;
+		    | unknown  : fwdTargets   : Sequence; (* of IdDesc *)
+		    | overload : overloadList : Sequence; (* of IdDesc *)
+                    ELSE (* nothing *)
+                    END; (* case *)
+                  END; (* record *)
+
+(* ----------------------------------------------------- *)
+
+PROCEDURE InsertAndCheck(VAR sc : IdRec;
+                             id : IdDesc;
+                         VAR ok : BOOLEAN);
+(* precondition  : sc is a valid proc or mod IdRec	 *)
+(* postcondition : id is inserted in tree, ok is false   *)
+(*                 if _key_ was already in the tree, but *)
+(*                 id was not.				 *)
+(*		   If object was forward referenced then *)
+(*		   an error message is issued.		 *)
+(*		   If id was already in tree ok is TRUE  *)
+(* ----------------------------------------------------- *)
+
+PROCEDURE CreateIdDesc(nam : HashBucketType;
+                   VAR ptr : IdDesc;
+                       tag : IdNodeClass);
+(* postcondition : space is allocated, and idClass set.  *)
+(*                 *Type is set to NIL and any sequences *)
+(*                 initialized. In the case of procs,    *)
+(*                 funcs, mods and exports, scope        *)
+(*                 pointers are set to zero as well.     *)
+(* ----------------------------------------------------- *)
+
+       (* II are < 0, UU > maxInt, ZZ in the overlap *)
+       (* implementation depends on ordinal ordering *)
+       (* subranges must be max of enums 27-jul-88   *)
+       (* opaqueTemps must exceed ptrs   09-mar-89   *)
+TYPE    TyNodeClass = (II, ZZ, UU, RR,
+                   bools, sets, enums, chars, ints, cards,
+		   hInts,
+                   floats, doubles, adrs, words, bytes, arrays,
+                   pointers, records, unions, procTypes,
+                   hiddens,    (* imported opaque *)
+                   opaqueTemp, (* own opaque type *)
+                   stringTs,   (* "strings" of T  *)
+                   funcTypes, S1, SS, subranges,
+                   managedRef);
+
+        TyClassSet = SET OF TyNodeClass;
+
+        PubEnum    = (notPub,            (* Not exported    *)
+                      namedPub,          (* Exported type   *)
+                      anonPub,           (* Public but anon *)
+                      opaqueAlias);      (* Elab. of opaque *)
+
+TYPE    TypeRec = RECORD
+                    tyName    : HashBucketType;
+		    tyNumber  : Types.Card16;
+                    parentMod : IdDesc;
+                    size      : CARDINAL;
+                    alignMask : CHAR;    (* 0C ==> byte aligned     *)
+                                         (* 3C ==> quad-byte align  *)
+                                         (* 7C ==> octo-byte align  *)
+                    dumped    : BOOLEAN; (* ==> output to symFile   *)
+                                         (* ==> typedef name exists *)
+                    pubTag    : PubEnum; (* type is exported        *)
+                    listed    : BOOLEAN; (* added to work list      *)
+                    CASE tyClass : TyNodeClass OF
+                      chars, ints, cards, floats, doubles, bools, adrs, words,
+                      hiddens, bytes, II, ZZ, UU, RR, S1, SS :
+                        dummy : CARDINAL (* to keep logitech happy *);
+                    | opaqueTemp : 
+                        resolvedType : TypeDesc;
+                    | enums :
+                        conSeq      : Sequence; (* of IdDesc *)
+                        cardinality : CARDINAL;
+                    | subranges :
+                        hostType : TypeDesc; (* transitive *)
+                        minRange : CARDINAL; (* II, ZZ or UU *)
+                        maxRange : CARDINAL; (* II, ZZ or UU *)
+			hiDesc   : IdDesc;
+                    | arrays :
+                        elementType : TypeDesc;
+                        indexType   : TypeDesc;
+                        isDynamic   : BOOLEAN;
+                    | sets :
+                        baseType : TypeDesc;
+                    | pointers, stringTs :
+                        targetType : TypeDesc;
+                        forwardHsh : HashBucketType;
+                    | records :
+                        fieldSeq : Sequence; (* of IdDesc *)
+                        fields   : IdTree;   (* recs only *)
+                    | unions :
+                        varSeq : Sequence;  (* of recType *)
+                    | procTypes, funcTypes :
+                        params : Sequence; (* formal Types *)
+                        result : TypeDesc; (* function procs *)
+			parSiz : INTEGER;
+			preCon : SYSTEM.ADDRESS; (* precon on TypeDesc *)
+                    END; (* case *)
+                  END; (* record *)
+
+(* ----------------------------------------------------- *)
+
+PROCEDURE CreateTypeDesc(modDes : IdDesc;
+                        VAR ptr : TypeDesc;
+                            tag : TyNodeClass);
+(* postcondition : desc. is allocated, tyClass is set    *)
+(*   7-Oct-89 (kjg) 
+ * the following types have size initialized
+ *   enums, hiddens, opaques, pointers, procs, others get "1"
+ * the following types have alignment initialized
+ *   enums, hiddens, opaques, pointers, procs, sets
+ *)
+(* ----------------------------------------------------- *)
+TYPE    FormalType = POINTER TO FormalRec;
+        FormalRec  = RECORD
+                       type : TypeDesc;
+                       fNam : HashBucketType;
+                       tNam : HashBucketType;
+                       form : FormalClass;
+                       dimN : Types.Card16;
+                     END;
+
+PROCEDURE MakeFormal(tp : TypeDesc;
+                     fn : HashBucketType;
+		     tn : HashBucketType;
+                     fm : FormalClass;
+                     od : CARDINAL) : FormalType;
+
+(* ----------------------------------------------------- *)
+
+CONST   infinity  = 65535; (* largest value of visitDepth *)
+
+TYPE    Attribute = (tailRecursive,   (* set by tail rec. removal pass *)
+                     directlyRecursive, recursive, (* set by Propagate *)
+                     calledStar, callsExtStar,     (* set by Propagate *)
+                     forward,                      (* set by Propagate *)
+                     callsProcVar, assigned,       (* set by Traverse  *)
+                     hasUplevObj,                  (* set by Traverse  *)
+                     stackCheck,                   (* set by M2Struct  *)
+		     optimize,			   (* set by M2Struct  *)
+		     nonLeafProc,		   (* native versions  *)
+		     hasExcept);
+        AttributeSet = SET OF Attribute;
+
+TYPE    IdString = STRING OF IdDesc;
+        TyString = STRING OF TypeDesc;
+
+TYPE    StrucRec = RECORD
+                     adjBlocks  : Sequence; (* used for calls graph   *)
+                     adjustSeq  : Sequence; (* adjust open par blocks *)
+		     maxParSize : INTEGER;
+                     statements : Sequence; (* main body of the block *)
+			(* stuff added here for exceptions *)
+                     exceptSeq  : Sequence; (* except stmts for main body    *)
+                     finalSeq   : Sequence; (* finally stmts of module block *)
+                     finalExSeq : Sequence; (* except stmts of finally block *)
+		     exceptDesc : IdDesc;   (* exception descriptor *)
+			(* ------------------------------- *)
+                     tempSize   : CARDINAL; (* set temp size in words *)
+					    (* later, vars + tempSize *)
+		     copySize   : CARDINAL; (* native versions only   *)
+                     refCount   : CARDINAL;
+                     visitDepth : CARDINAL; (* after traversal, depth *)
+                     callAttrib : AttributeSet;
+		     usedBkts   : UsedSetPtr;
+		     headerLine : CARDINAL; (* line number of header  *)
+		     loopJunk   : LoopJunk;
+		     endIdLine  : CARDINAL; (* line number of END id  *)
+		     nestBlks   : IdString;
+                   END;
+
+   (* ----------------------------------------------------- *)
+   (* This module holds some global state variables. Almost *)
+   (* all of these are logically read-only, except for the  *)
+   (* single module which maintains the state value         *)
+   (* ----------------------------------------------------- *)
+
+    VAR density : CARDINAL;
+
+    VAR globalModList   : Sequence;
+             (* this is the sequence of modules which are
+              * indirectly imported into this comp unit. *)
+
+        thisCompileUnit : IdDesc;
+        symKeyValue     : CARDINAL;
+             (* the idClass = modNode descriptor of the
+              * module of the compilation unit. The body
+              * field of this descriptor is the root of
+              * the structure tree for the unit. In case
+              * of an imp mod, symKeyValue is own key. *)
+
+         current  : IdDesc;    (* READ ONLY *)
+	 lexLevel : [0 .. 16]; (* READ ONLY *)
+
+         pervasiveUnit : IdDesc;
+             (* the idClass = exportNode descriptor of the
+              * standard environment which encloses all
+              * modules. All modules have the "uphill"
+              * pointer indicating this module.          *)
+
+         unitExports : Sequence; (* of IdDesc *)
+             (* during def. comp. this is exported list  *)
+         unitImports : Sequence;
+             (* during def. comp. this is imported list  *)
+             (* during imp. comp. is fixup list of procs *)
+             (* and types which need to be elaborated    *)
+
+	 codeBlkList : IdString;
+
+         modState : ModStateSet;  (* state of this module *)
+             (* externsAssigned flag notes that proc vars *)
+             (* or parameters cross the module boundary   *)
+
+(* ----------------------------------------------------- *)
+END M2NodeDefs.

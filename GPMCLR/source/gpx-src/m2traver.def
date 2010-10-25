@@ -1,0 +1,43 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*            Tree Traversal and Semantic Checking              *)
+(*                                                              *)
+(*      (c) copyright 1988 Faculty of Information Technology    *)
+(*                                                              *)
+(*      original module : jh May 1988                           *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2traver.def,v $
+Revision 1.2  1997/01/16 05:24:47  gough
+new procedure TraversePrecon
+
+Revision 1.1  1994/04/07 05:29:46  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2Traversal;
+  FROM M2Designators IMPORT ExprDesc;
+  FROM M2NodeDefs    IMPORT TypeDesc;
+
+PROCEDURE InitPointers;
+
+PROCEDURE TraverseExp(VAR exp : ExprDesc);
+
+PROCEDURE TraversePrecon(exp : TypeDesc);
+
+PROCEDURE SemanticCheck;
+(* precondition  : (1) the abstract syntax tree for the input
+                       file has been built, 
+                   (2) CurrentFlags() * errors = {}
+                   (3) NOT (defMod IN CurrentFlags())
+   postcondition : names are resolved, types checked and any
+                   necessary tree-to-tree transformations made  *)
+
+END M2Traversal.
+
+
+

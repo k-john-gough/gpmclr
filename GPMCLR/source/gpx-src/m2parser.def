@@ -1,0 +1,30 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*		  Parser and Tree Constructor.			*)
+(*								*)
+(*	     (c) copyright 1987 SoftWare Automata.		*)
+(*								*)
+(*	original module : kjg july 1987				*)
+(*	modifications   :					*)
+(*								*)
+(****************************************************************
+$Log: m2parser.def,v $
+Revision 1.1  1994/04/07 05:10:33  lederman
+Initial revision
+
+*****************************************************************)
+
+
+DEFINITION MODULE M2Parser;
+
+PROCEDURE ParseFileHeader;
+PROCEDURE ParseInputFile;
+(* precondition  : an input file is attached, options set and
+		   the scanner initialized by InitScanner.	*)
+(* postcondition : a valid tree is constructed. If errors not
+		   in M2Scanner.CurrentFlags() then file was a
+		   syntactically correct Modula program.	*)
+
+END M2Parser.

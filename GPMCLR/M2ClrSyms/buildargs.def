@@ -1,0 +1,88 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+(* !LIBRARY! *) DEFINITION MODULE BuildArgs;
+
+  TYPE ArgPtr; (* ==> "pointer to array of strings" in UNIX  *)
+
+  (* The first set of procedures are simple & efficient and
+     have several restrictions to their use. However, they
+     suffice for most purposes, when used as shown below.
+   *)
+
+  PROCEDURE Arg1(a1 : ARRAY OF CHAR) : ArgPtr;
+  PROCEDURE Arg2(a1, a2 : ARRAY OF CHAR) : ArgPtr;
+  PROCEDURE Arg3(a1, a2, a3 : ARRAY OF CHAR) : ArgPtr;
+  PROCEDURE Arg4(a1, a2, a3, a4 : ARRAY OF CHAR) : ArgPtr;
+  (*
+     preconditions : a's may be literals or variable arrays.
+     These procedures safely copy array parameters into a
+     dynamically allocated block, adding NUL termination if
+     necessary. Actual param variables may thus be reused.
+
+     usage example:
+        ...
+        FROM BuildArgs IMPORT Arg3;
+        FROM UxProcesses IMPORT Execp; (* execs from $PATH *)
+          VAR cmd, fNm : ARRAY [0 .. 39] OF CHAR;
+          ...
+          Execp("foo", Arg3("foo", cmd, fNm));
+          Error("Can't exec 'foo'");
+          ...
+
+
+     The next set of procedures allow argument blocks of any
+     size to be built, and allow for explicit reclaiming of
+     memory space from used blocks, where that is necessary.
+     These procedures safely copy array parameters into a
+     dynamically allocated block, adding NUL termination if
+     necessary. Actual param variables may thus be reused.
+   *)
+
+  TYPE ArgBlock; (* args + builder state information *)
+
+  PROCEDURE NewArgBlock(VAR b : ArgBlock; max : CARDINAL);
+  (* postcondition : buffer space for max args is allocated
+                     and the block state is initialized
+   *)
+
+  PROCEDURE DisposeArgBlock(VAR b : ArgBlock);
+  (* postcondition : buffer space is reclaimed, b is NIL *)
+
+  PROCEDURE AppendArg(b : ArgBlock; a : ARRAY OF CHAR);
+  (* precondition  : b has been initialized by NewArgBlock;
+                     is not fully occupied; 
+     postcondition : the block designated by b is updated so
+                     that a is its final argument. On block
+                     overflow an index error is raised
+   *)
+
+  PROCEDURE ArgsOf(b : ArgBlock) : ArgPtr;
+  (*
+     extracts the args from the valid ArgBlock buffers
+
+     usage example:
+        ...
+        WHILE condition DO
+          NewArgBlock(blk,64);
+          WHILE xxx DO (* build block *)
+            ....
+            AppendArg(blk,str);
+          END;
+          Foo(ArgsOf(blk)); (* use block *)
+          DisposeArgBlock(blk); (* reclaim space *)
+        END;
+        ...
+  *)
+
+END BuildArgs.

@@ -1,0 +1,21 @@
+(* ==================================================== *
+ *							*
+ *		GPM File Utility Module			*
+ *							*
+ *	Implemented by kjg, November 2003		*
+ *							*
+ * ==================================================== *)
+
+FOREIGN DEFINITION MODULE Wildcards;
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+  IMPORT BuildArgs;
+
+  PROCEDURE GetMatchingFiles(dirName : ARRAY OF CHAR;
+                             pattern : ARRAY OF CHAR) : BuildArgs.ArgPtr;
+  (* pre  : dirInfo denotes the chosen directory to search.   *)
+  (* post : NIL if no matching files in current directory ... *)
+  (*        else an ArgPtr with the filenames appended to it. *)
+
+  PROCEDURE DisposeArgPtr(aPtr : BuildArgs.ArgPtr);
+  
+END Wildcards.

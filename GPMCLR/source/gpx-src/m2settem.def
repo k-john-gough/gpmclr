@@ -1,0 +1,39 @@
+(****************************************************************)
+(*                                                              *)
+(*              Modula-2 Compiler Source Module                 *)
+(*                                                              *)
+(*          Destination Marking for Set Expressions.            *)
+(*                                                              *)
+(*    (c) copyright 1988 Faculty of Information Technology.     *)
+(*                                                              *)
+(*      original module : kjg December 1988                     *)
+(*      modifications   :                                       *)
+(*                                                              *)
+(****************************************************************
+$Log: m2settem.def,v $
+Revision 1.2  1996/11/27 02:50:09  lederman
+change param type of MarkSetExpressions()
+
+Revision 1.1  1994/04/07 05:19:44  lederman
+Initial revision
+
+*****************************************************************)
+
+DEFINITION MODULE M2SetTemporaries;
+
+  FROM M2NodeDefs IMPORT IdDesc;
+
+  PROCEDURE MarkSetExpressions(proc : IdDesc);
+  (* postcondition : All set constructors and set expressions
+                     are marked with a valid SetDestType, and
+                     proc^.tempSize is size of scratch area.
+                     Sets have a "fixed" destination if they
+                     are immediately assigned to a variable,
+                     otherwise they are "temporary". If so,
+                     and if the expr. is a binop with one or
+                     more temporary sub-expr's, then one of
+                     the sub-expr's (preferably left) will
+                     share the same temporary location.
+  *)
+
+END M2SetTemporaries.

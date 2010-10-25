@@ -1,0 +1,327 @@
+##
+## This is the processor characteristic include file
+##
+## ===========================================================================
+##
+## Modifications --
+##	kjg 01-Mar-91	Adding apollo version
+##	kjg 03-Mar-91	allANSI for versions using prototypes even for M2
+##	kjg 04-Mar-91	undefining C type for security
+##	kjg 05-Mar-91   fix rejection of nested protos in HPPA version
+##	kjg 11-Mar-91   hppa version gets the allANSI flag
+##	kjg 27-Jul-91	hp700 experimental version (nonANSI)
+##	jrh 04-Mar-92	ibmrs6000
+##	jrh 19-Mar-92	hppa (hp800) back to K&R
+##	kjg 03-Jun-92   i386 and fix apollo with NOMINUSW
+##	jrh 08-Jun-92   AlignTest3 shows ibmrs6000 is quadAlign
+##	jl  10-Feb-92   Adding solaris version
+##      pms 29-Jun-93   Changed sparc -> Sparc to avoid cc conflicts with
+##                      Solaris and i386viaC -> i386.
+##      pms 28-Jul-93   Added gpmpc platform. Extracts code for IBM PC
+##                      interpreted version
+##      pms 26-Oct-93   Added Alpha and Windows NT platforms.  Deleted 
+##                      pcnative platform, superseded by gpmpc platform.
+##      pms 21-Jan-94   Added experimental Macintosh platform details
+##      pms 02-Mar-94   Change version name of i386 platform
+##      kjg 30-Dec-03   Include definitions for .NET CLR platform
+##
+## ===========================================================================
+## 
+## Must undefine C-types to avoid defining both ...
+# ifdef ANSI_C
+#   undef ANSI_C
+# endif ANSI_C
+# ifdef KandR_C
+#   undef KandR_C
+# endif KandR_C
+## 
+#ifdef mips		# generic mips other than DECstation
+#	define VERSION_NAME MIPS server/station
+#	define processor mips_risc
+#	define opsys sysV
+#	define endian big
+#	define ANSI_C
+#	define ALIGN octoAlign
+#endif mips
+##
+#ifdef decmips		# DECstation mips
+#	define VERSION_NAME DEC Ultrix/MIPS
+#	define processor mips_risc
+#	define opsys sysV
+#	define endian little
+#	define ANSI_C
+#	define allANSI
+#	define ALIGN octoAlign
+#	define BIGTABLES
+#	define DYNTABLES
+#endif decmips
+##
+#ifdef alpha            # DEC Alpha
+#       define VERSION_NAME DEC Alpha
+#       define processor alpha_risc
+#       define opsys sysV           # actually OSF/1
+#       define endian little
+#       define ANSI_C
+#       define allANSI
+#       define ALIGN octoAlign
+#       define EMITLONGS
+#       define BIGTABLES
+#       define DYNTABLES
+#endif alpha
+##
+#ifdef i386
+#	define VERSION_NAME i386 
+#	define processor iap386
+#	define opsys sysV
+#	define endian little
+#	define ANSI_C
+#	define allANSI
+#	define ALIGN quadAlign
+#	define NOMINUSW
+#endif i386
+##
+#ifdef winnt
+#       define VERSION_NAME Windows NT
+#       define processor iap386
+#       define endian little
+#       define ANSI_C
+#       define ALIGN quadAlign
+#       define DYNTABLES
+#       define DOS_CONIO
+#endif winnt
+##
+#ifdef dotnet86
+#       define VERSION_NAME .NET CLI for iap86
+#       define processor iap386
+#       define opsys  windows
+#       define endian little
+#       define ANSI_C
+#       define ALIGN quadAlign
+#       define DOTNET_CLI
+#endif dotnet86
+##
+#ifdef freebsd
+#       define VERSION_NAME FreeBSD
+#       define processor iap386
+#       define endian little
+#       define ANSI_C
+#endif freebsd
+##
+#ifdef cygwin
+#       define VERSION_NAME Cygnus-Win32
+#       define processor iap386
+#       define endian little
+#       define ANSI_C
+#endif cygwin
+##
+#ifdef linux
+#       define VERSION_NAME Linux
+#       define processor iap386
+#       define endian little
+#       define ANSI_C
+#endif linux
+##
+#ifdef djgpp
+#	define VERSION_NAME DJGPP
+#	define processor iap386
+#	define endian little
+#	define ANSI_C
+#       define DOS_CONIO
+#endif djgpp
+##
+#ifdef os2
+#	define VERSION_NAME OS/2
+#	define processor iap386
+#	define endian little
+#	define ANSI_C
+#       define DOS_CONIO
+#endif os2
+##
+#ifdef iris		# Silicon Graphics IRIS
+#	define VERSION_NAME Silicon Graphics IRIS
+#	define processor mips_risc
+#	define opsys sysV
+#	define endian big
+#	define ANSI_C
+#	define ALIGN octoAlign
+#endif iris
+##
+#ifdef sonymips		# SONY mips based workstations
+#	define VERSION_NAME SONY NEWS/RISC
+#	define processor mips_risc
+#	define opsys bsd
+#	define endian big
+#	define ANSI_C
+#	define allANSI
+#	define ALIGN octoAlign
+#endif sonymips
+##
+#ifdef sony2pc
+#  include sony2pc.mpp
+#endif sony2pc
+##
+#ifdef dec2pc
+##
+##   This version for the DEC to Turbo C cross compiler
+##
+#	define VERSION_NAME DEC-RISC to Turbo-C
+#	define processor mips_risc
+#	define opsys sysV
+#	define endian little
+#	define targetEnd little
+## *target* is little endian ...
+#	define ANSI_C
+#	define allANSI
+#	define ALIGN evenAlign
+#	define EMITLONGS
+##
+#endif dec2pc
+##
+#ifdef gpmpc
+##
+##   This version for the normal interpreted GPM PC source
+##
+#	define VERSION_NAME GPM-PC
+#	define processor intel_iapx86
+#	define opsys dos
+#	define endian little
+#	define targetEnd little
+## *target* is little endian ...
+#	define ANSI_C
+#	define allANSI
+#	define ALIGN evenAlign
+#	define nativeCode
+#endif gpmpc
+##
+#ifdef hppa
+#	define VERSION_NAME HP-PA 9000/8xx
+#	define processor hppa_risc
+#	define opsys sysV
+#	define endian big
+## Mar 92: hppa (rename to hp800?) back to K&R to match 700 and avoid
+## problem of prototypes in pointer or record types (example is batch
+## settest1 - ibmrs6000and apollo cc don't complain!)
+##	define ANSI_C
+##	define allANSI
+##  fix broken C compiler ...
+##	define MAXPROTODEPTH 1
+#	define KandR_C
+#	define ALIGN octoAlign
+#	define DYNTABLES
+#endif hppa
+#ifdef hp700
+#	define VERSION_NAME HP-PA 9000/7xx
+#	define processor hppa_risc
+#	define opsys sysV
+#	define KandR_C
+#	define endian big
+#	define ALIGN octoAlign
+#	define DYNTABLES
+#endif hp700
+#ifdef Sparc
+#	define VERSION_NAME SUN-4 (SPARC)
+#	define processor sparc_risc
+#	define opsys bsd
+#	define endian big
+#	define KandR_C
+#	define ALIGN octoAlign
+#	define DYNTABLES
+#endif Sparc
+#ifdef solaris
+#	define VERSION_NAME SOLARIS (SPARC)
+#	define processor sparc_risc
+#	define opsys sysV
+#	define endian big
+#	define ANSI_C
+#	define ALIGN octoAlign
+#	define DYNTABLES
+#endif solaris
+##
+#ifdef sun68k
+#	define VERSION_NAME SUN-3 (M68k)
+#	define processor motorola_68k
+#	define opsys bsd
+#	define KandR_C
+#	define endian big
+#	define ALIGN evenAlign
+#	define DYNTABLES
+#endif sun68k
+##
+#ifdef mac
+#	define VERSION_NAME MACINTOSH (M68k)
+#	define processor motorola_68k
+#	define opsys bsd
+#	define KandR_C
+#	define endian big
+#	define ALIGN evenAlign
+#	define DYNTABLES
+#endif mac
+##
+#ifdef apollo
+#	define VERSION_NAME Apollo SR 10 (M68k)
+#	define processor motorola_68k
+#	define opsys $SYSNAME
+#	define ANSI_C
+#	define allANSI
+#	define endian big
+#	define ALIGN evenAlign
+#	define NOMINUSW
+#	define DYNTABLES
+#endif apollo
+##
+#ifdef hp68k
+#	define VERSION_NAME HP-9000/3xx (M68k)
+#	define processor motorola_68k
+## 		according to the manual file, this should
+##		be ANSI_C, but at DEC 90, cc -Aa is rejected (kjg)
+#	define opsys sysV
+#	define KandR_C
+#	define endian big
+#	define ALIGN evenAlign
+#	define DYNTABLES
+#endif hp68k
+##
+#ifdef sony68k
+#	define VERSION_NAME SONY NEWS/M68k
+#	define processor motorola_68k
+## Jul 92: prototypes cause syntax & various other errors
+##	define ANSI_C
+##	define allANSI
+#	define KandR_C
+#	define opsys bsd
+#	define endian big
+## Not:
+##	define ALIGN evenAlign
+#	define ALIGN quadAlign
+#	define DYNTABLES
+#endif sony68k
+#ifdef ibmrs6000
+#	define VERSION_NAME IBM RS6000
+#	define processor rs6000
+#	define opsys bsd
+#	define endian big
+#	define ANSI_C
+#	define allANSI
+##  fix broken C compiler ...
+#	define MAXPROTODEPTH 1
+#	define ALIGN quadAlign
+#	define DYNTABLES
+#endif ibmrs6000
+##
+## now the tests for something actually set
+## THIS IS MODIFIED IF OTHER PROCESSOR TYPES ADDED ---
+#ifndef processor
+#  message processor type not set -- valid command line switches are
+#  message "mips, decmips, iris, sonymips, Sparc, apollo, i386,"
+#  message "hppa, hp700, sun68k, sony68k, hp68k, pcport, ibmrs6000"
+#  message "solaris, gpmpc, alpha, os2, winnt, freebsd, cygwin, linux, djgpp"
+#  message "dotnet86"
+#  error
+##
+#endif processor
+(\* 
+ *  extracted with 
+ * 	    "opsys" == \"opsys\"
+ * 	   "endian" == \"endian\"
+ *	"processor" == \"processor\"
+ *\)

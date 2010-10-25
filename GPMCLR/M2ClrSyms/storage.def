@@ -1,0 +1,27 @@
+(****************************************************************)
+(*                                                              *)
+(*         Gardens Point Modula-2 Library Definition            *)
+(*                                                              *)
+(*                                                              *)
+(*     (c) Copyright 1996 Faculty of Information Technology     *)
+(*              Queensland University of Technology             *)
+(*                                                              *)
+(*     Permission is granted to use, copy and change this       *)
+(*     program as long as the copyright message is left intact  *)
+(*                                                              *)
+(****************************************************************)
+
+FOREIGN DEFINITION MODULE Storage;
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+
+  FROM SYSTEM IMPORT ADDRESS;
+
+  PROCEDURE ALLOCATE(VAR ptr : ADDRESS; size : CARDINAL);
+  (* postcondition : returns a ptr to object of size bytes   *)
+  (*                 rounded up to a whole number of words   *)
+
+  PROCEDURE DEALLOCATE(VAR ptr : ADDRESS; size : CARDINAL);
+  (* precondition  : ptr^ must have been gained from heap    *)
+  (* postcondition : (pre-ptr)^ is disposed, ptr = NIL       *)
+
+END Storage.

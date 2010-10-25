@@ -1,0 +1,134 @@
+
+(* ========================================================= *)
+(* Preliminary library module for Gardens Point Modula       *)
+(* in this implementation the string terminator is Ascii.nul *)
+(* Revision History:                                         *)
+(*                  pms 12 Jan 94 Now a preprocessed dpp file*)
+(* ========================================================= *)
+
+(* !LIBRARY! *) DEFINITION MODULE StdStrings;
+
+
+TYPE String1 = ARRAY [0 .. 0] OF CHAR;
+(* allows single char variables to be used as strings *)
+
+CONST StringCapacity = 256;
+
+TYPE String  = ARRAY [0 .. StringCapacity - 1] OF CHAR;
+(* a conveniently sized array for general purposes *)
+
+PROCEDURE Length(stringValue : ARRAY OF CHAR) : CARDINAL;
+(* number of character in string, not including nul *)
+
+PROCEDURE CanAssignAll 
+              ( sourceLength : CARDINAL;
+             VAR destination : ARRAY OF CHAR) : BOOLEAN;
+(* Returns sourceLength <= HIGH(destination) + 1 *)
+
+PROCEDURE Assign    ( source : ARRAY OF CHAR;
+             VAR destination : ARRAY OF CHAR);
+(* Source is copied to destination. If shorter, string
+   is nul terminated, if too long it is truncated      *)
+
+PROCEDURE CanExtractAll 
+              ( sourceLength : CARDINAL;
+                  startIndex : CARDINAL;
+             numberToExtract : CARDINAL;
+             VAR destination : ARRAY OF CHAR) : BOOLEAN;
+(* Returns (startIndex + numberToExtract <= sourceLength) AND
+	   (HIGH(destination) + 1 >= numberToExtract)  *)
+
+PROCEDURE Extract   ( source : ARRAY OF CHAR;
+                  startIndex : CARDINAL;
+             numberToExtract : CARDINAL;
+             VAR destination : ARRAY OF CHAR);
+(* Extracts numberToExtract characters starting at startIndex.
+   If source string is too short less will be extracted, even
+   zero characters if source does not extend past startIndex *)
+
+PROCEDURE CanDeleteAll 
+              ( stringLength : CARDINAL;
+                  startIndex : CARDINAL;
+              numberToDelete : CARDINAL) : BOOLEAN;
+(* Returns (startIndex < stringLength) AND
+	   (startIndex + numberToDelete <= stringLength) *)
+
+PROCEDURE Delete (VAR string : ARRAY OF CHAR;
+                  startIndex : CARDINAL;
+              numberToDelete : CARDINAL);
+(* Deletes numberToDelete characters starting at startIndex.
+   If string is short then fewer may be deleted, even none *)
+
+PROCEDURE CanInsertAll 
+              ( sourceLength : CARDINAL;
+                  startIndex : CARDINAL;
+             VAR destination : ARRAY OF CHAR) : BOOLEAN;
+(* Returns (startIndex < Length(destination)) AND
+	 (sourceLength + Length(destination) <= HIGH(destination) + 1) *)
+
+PROCEDURE Insert    ( source : ARRAY OF CHAR;
+                  startIndex : CARDINAL;
+             VAR destination : ARRAY OF CHAR);
+(* Inserts source string starting at startIndex. Resulting
+   string is truncated if necessary to fit in destination array *)
+
+PROCEDURE CanReplaceAll 
+              ( sourceLength : CARDINAL;
+                  startIndex : CARDINAL;
+             VAR destination : ARRAY OF CHAR) : BOOLEAN;
+(* Returns (sourceLength + startIndex <= Length(destination)) *)
+
+PROCEDURE Replace   ( source : ARRAY OF CHAR;
+                  startIndex : CARDINAL;
+             VAR destination : ARRAY OF CHAR);
+(* Replaces destination characters with those of source, starting
+   at startIndex. Result string is always the same length as before *)
+
+PROCEDURE CanAppendAll 
+              ( sourceLength : CARDINAL;
+             VAR destination : ARRAY OF CHAR) : BOOLEAN;
+(* Returns Length(destination) + sourceLength <= HIGH(destination) + 1 *)
+
+PROCEDURE Append    ( source : ARRAY OF CHAR;
+             VAR destination : ARRAY OF CHAR);
+(* Appends source string to destination. Resulting string is 
+   truncated if necessary, to fit into destination array *)
+
+PROCEDURE Capitalize
+              (VAR stringVar : ARRAY OF CHAR);
+(* Applies the CAP function to each character in string *)
+
+TYPE CompareResult = (less, equal, greater);
+
+PROCEDURE Compare(stringVal1 : ARRAY OF CHAR;
+                  stringVal2 : ARRAY OF CHAR) : CompareResult;
+(* Compares according to the underlying collating sequence
+   of the character set (Ascii in this case). Returns less
+   if stringVal1 < stringVal2 and so on			*)
+
+PROCEDURE FindNext ( pattern : ARRAY OF CHAR;
+                 stringValue : ARRAY OF CHAR;
+                  startIndex : CARDINAL;
+            VAR patternFound : BOOLEAN;
+            VAR posOfPattern : CARDINAL);
+(* Finds next occurrence of pattern in stringValue, 
+   starting at index greater than or equal to startIndex.
+   If pattern is not found, posOfPattern is not changed *)
+
+PROCEDURE FindPrev ( pattern : ARRAY OF CHAR;
+                 stringValue : ARRAY OF CHAR;
+                  startIndex : CARDINAL;
+            VAR patternFound : BOOLEAN;
+            VAR PosOfPattern : CARDINAL);
+(* Finds previous occurrence of pattern in stringValue, 
+   starting at index greater than or equal to startIndex
+   If pattern is not found, posOfPattern is not changed *)
+
+PROCEDURE FindDiff
+                ( stringVal1 : ARRAY OF CHAR;
+                  stringVal2 : ARRAY OF CHAR;
+         VAR differenceFound : BOOLEAN;
+         VAR posOfDifference : CARDINAL);
+(* Finds first character index in which the strings differ *)
+
+END StdStrings.

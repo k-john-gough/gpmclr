@@ -1,0 +1,254 @@
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*       Parser for Designators, and Designator  Utilities      *)
+(*								*)
+(*    (c) copyright 1988 Faculty of Information Technology      *)
+(*								*)
+(*      original module : kjg                         01-May-88 *)
+(*      modifications   : adding EmptySelList()       07-Jun-88 *)
+(*                      : mod. of AccessMode for jhol 04-Aug-88 *)
+(*      last modified   : modification of ExprNodeClass         *)
+(*                        and ExprDesc     13-Aug-88, 24-Aug-88 *)
+(*                      : add testFlags to ExprRec    25-Oct-88 *)
+(*                      : adding lit-chain attributes to        *)
+(*                        literalNode ExprRecs        02-Dec-88 *)
+(*                      : adding set temp info        31-Dec-88 *)
+(*			: del. "local" from SetAcc.   18-Apr-89 *)
+(*			: new exprClass repCount       9-Nov-89 *)
+(*			: new exprClass selConst      29-Nov-89 *)
+(*			: new constructorNode kjg     03-Oct-92 *)
+(*                                                              *)
+(****************************************************************
+$Log: m2design.def,v $
+Revision 1.7  1997/01/16 02:34:14  gough
+        modifications to desigNode, new variant for preconNode
+        and new use of compoundNode.
+        Extra exported procedures to allow building of expr trees
+        in m2symexp
+
+Revision 1.6  1995/09/15 07:38:11  gough
+new IdDesc field mergeId for Boolean evals from jumping code
+
+Revision 1.5  1995/03/23 22:53:10  gough
+new structure ExpandInfo for the EXPAND list
+
+# Revision 1.4  1995/03/14  01:10:59  gough
+# introduce new parameter marshalling node types
+#
+# Revision 1.3  1995/03/02  08:49:35  gough
+# definition of new node type "castNode"
+#
+# Revision 1.2  1994/07/01  04:26:15  lederman
+# adrSize refers to 'host' address size in this module
+#
+# Revision 1.1  1994/04/07  04:48:37  lederman
+# Initial revision
+#
+*****************************************************************)
+
+DEFINITION MODULE M2Designators;
+  FROM M2Alphabets IMPORT
+        HashBucketType, LexAttType, SymbolSet, FlagSet;
+  FROM M2NodeDefs  IMPORT IdDesc, TypeDesc, LoopJunk;
+  FROM GenSequenceSupport IMPORT Sequence;
+  FROM M2InOut IMPORT Position;
+
+  FROM SYSTEM IMPORT BYTE, WORD;
+
+  TYPE  BlockPtr;
+        DesigRec   = RECORD
+                       variable : IdDesc;   (* or NIL if error *)
+                       firstSel : BlockPtr; (* ADT access only *)
+                     END;
+
+  TYPE  WithDesc   = POINTER TO WithRec;
+        WithRec    = RECORD
+                       desig  : DesigRec;
+                       uphill : WithDesc;
+                       dummy  : IdDesc; (* dummy variable *)
+                     END;
+
+  PROCEDURE InitDesignator(VAR desg : DesigRec);
+
+  PROCEDURE ParseDesignator(halt : SymbolSet;
+                        VAR desg : DesigRec);
+  (* designator is parsed and the selector list created *)
+  (* the field "variable" is still always equal to NIL  *)
+
+  (* -------------------------------------------------- *)
+  (*   for set expressions, memory temporaries may be   *)
+  (*   required. These are tagged in the following way. *)
+
+  CONST fxVal = MAX(CARDINAL); (* index = fxVal ==> dest fixed *)
+
+(* ----------------------------------------------------- *)
+
+  TYPE ExprDesc = POINTER TO ExprRec;
+
+     (* Ordinal sequence MUST align with TerminalSymbols *)
+      ExprNodeClass = 
+        ( errNode, andNode, divNode, starNode, 
+	  slashNode, modulusNode, remNode, plusNode, 
+	  minusNode, orNode, equalsNode, notEqNode, 
+	  greaterNode, grEqualNode, lessNode, lessEqNode, 
+	  inNode, notNode, 
+				negateNode, literalNode, 
+	  desigNode, constructorNode, adrDesigNode, funcDesigNode, 
+	  repCountNode, selConstNode, setDesigNode, castNode, 
+	  openMarshallNode, fixedMarshallNode, preconNode);
+
+      ActualParMode =                     (* new 24-Aug-88 *)
+        ( notActual, valActual, refActual,  (* usual cases *)
+          open1D,                                 (* opens *)
+          byteOpen, wordOpen);        (* amorphous actuals *)
+
+       ExprRec   = RECORD
+                     sourceLoc   : Position;
+                     testFlags   : FlagSet;
+                     exprType    : TypeDesc; (* result type *)
+                     actualClass : ActualParMode;
+                     CASE exprClass : ExprNodeClass OF
+                     | notNode, negateNode :
+                         notOp    : ExprDesc;
+                     | castNode :
+                         source   : ExprDesc;
+                         tempId   : IdDesc;
+			 needTmp  : BOOLEAN;
+			 wrd2wrd  : BOOLEAN;
+                     | openMarshallNode, fixedMarshallNode :
+			 actualX  : ExprDesc;
+			 mrshPtr  : ExprDesc; (* open case only  *)
+			 mrshSiz  : INTEGER;  (* fixed case only *)
+		         elemByElem : LoopJunk;
+                     | desigNode, funcDesigNode, constructorNode, 
+				literalNode, adrDesigNode, setDesigNode :
+                         CASE (* same tag *) : ExprNodeClass OF
+                         | desigNode, funcDesigNode, adrDesigNode, 
+			   selConstNode : (* also setDesig BEFORE temp alloc *)
+			     name : DesigRec;
+                         | constructorNode : (* setDesig AFTER temp allocation*)
+			     setConDest : CARDINAL;
+			 | literalNode :
+			     conValue : LexAttType;
+                         END;
+                         CASE (* same tag *) : ExprNodeClass OF
+                         | constructorNode  : rangeSeq : Sequence;
+                         | funcDesigNode : paramSeq : Sequence;
+			 | selConstNode, (* AFTER fixing only *)
+			   literalNode : (* always *)
+                             rtOffset : CARDINAL; (* strings and sets only *)
+                             chainLnk : ExprDesc; (* next literal in chain *)
+                         ELSE (* empty *)
+                         END;
+		     | preconNode   :
+			 theCall : ExprDesc;
+			 evalLst : Sequence;	  (* of assign statements  *)
+		     | repCountNode :
+			 count : CARDINAL;
+                     ELSE
+                       leftOp, rightOp : ExprDesc; (* all cases   *)
+                       mergeId         : IdDesc;   (* and,or only *)
+                       setOpDest       : CARDINAL; (* temp. index *)
+                       (* only: set binops after temp allocation. *)
+                     END;
+                   END;
+
+  PROCEDURE CreateExprDesc(VAR ptr : ExprDesc;
+                               tag : ExprNodeClass);
+  (* postcondition : record is allocated and fields initialized *)
+
+(* ----------------------------------------------------- *)
+
+  TYPE	ExpandInfo = POINTER TO RECORD
+		       dimenNum : CARDINAL;
+		       elemType : TypeDesc;
+		       mrshNode : ExprDesc;
+		     END;
+
+(* ----------------------------------------------------- *)
+
+  TYPE AccessMode = (unresolved,   (* 0: initial value on node creation *)
+                     directLocl,   (* 1: local object directly accessed *)
+                     directNonL,   (* 2: directly accessed but non-loc. *)
+                     highAccess,   (* 3: access to a HIGH for this proc *)
+                     refOverwrite, (* 4: access to varPar reference     *)
+                     indirect,     (* 5: accessed by deref of pointer   *)
+                     uplevel,      (* 6: uplevel accessed by cache ptr. *)
+                     uplevelIndirect); (* 7: uplevel access to varPar   *)
+
+  PROCEDURE AccessModeOf(desig : DesigRec) : AccessMode;
+
+  PROCEDURE ForceAccessMode(VAR desig : DesigRec;
+                                mode  : AccessMode);
+
+  PROCEDURE SetAccessMode(VAR desig : DesigRec);
+  (* precondition  : desig has been bound and is a variable *)
+  (* postcondition : access mode of variable desig is set   *)
+
+ (*
+  *  adrSize refers to host address size in this module (jl Jun 94)
+  *)
+  CONST adrSize = SIZE(WORD);
+
+  TYPE SelectNodeClass =
+         (endMarker, 
+	  dereferenceNode, 
+	  subscriptNode, 
+          identifierNode,       (* initial tag of name selector *)
+          fieldExtractNode);     (* after binding the field name *)
+
+       SelectAttribute = RECORD
+                           CASE tag : SelectNodeClass OF
+                             subscriptNode    : exp : ExprDesc;
+                           | identifierNode   : hsh : HashBucketType;
+                           | fieldExtractNode : fid : IdDesc;
+                           ELSE bytes : ARRAY[0 .. adrSize - 1] OF BYTE;
+                           END;
+                         END;
+
+  TYPE DStateType = RECORD
+                      curs : BlockPtr; (* of byte blocks *)
+                      byte : CARDINAL; (* next free byte *)
+                    END;
+
+  PROCEDURE SelectListBegin(des : DesigRec; VAR stat : DStateType);
+  PROCEDURE PushIdentifier(VAR stat : DStateType; hsh : HashBucketType);
+  PROCEDURE PushDereference(VAR stat : DStateType);
+  PROCEDURE PushSubscript(VAR stat : DStateType; exp : ExprDesc);
+  PROCEDURE SelectListEnd(stat : DStateType);
+  PROCEDURE CloneDesig(old : DesigRec; VAR new : DesigRec);
+
+  PROCEDURE InitDState(desig  : DesigRec;
+                   VAR dState : DStateType);
+  (* the local record is initialized which will hold the   *)
+  (* state of a list for extraction of selectors           *)
+
+  PROCEDURE GetSelector(VAR dState : DStateType;
+                        VAR selVal : SelectAttribute);
+
+  PROCEDURE BindFieldName(desg   : DesigRec;
+                      VAR dState : DStateType;
+                          fldPtr : IdDesc);
+  (* changes identifierNode to fieldExtractNode, and     *)
+  (* changes the attribute from hash to given IdDesc     *)
+  (* precondition : dState MUST be attached to desg      *)
+
+  PROCEDURE EmptySelList(desig : DesigRec) : BOOLEAN;
+  (* returns true if first selector is endMarker *)
+
+  PROCEDURE MoveSelectors(VAR desig : DesigRec;
+                              dStat : DStateType);
+  (* adjusts selector list after base of desig is bound  *)
+
+(* ----------------------------------------------------- *)
+
+  PROCEDURE Summary(); (* stats of designator usage *)
+  PROCEDURE MaxCacheIndex() : CARDINAL;
+
+END M2Designators.
+
+
+
+

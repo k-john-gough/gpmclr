@@ -1,0 +1,29 @@
+(* -- RCS header --
+	$Log:	mkalphab.mpp,v $
+Revision 1.1  93/03/25  14:31:45  mboss
+Initial revision
+
+*)
+## this file currently has no conditional statements
+
+# include machine.mpp
+
+
+(****************************************************************)
+(*								*)
+(*		Modula-2 Compiler Source Module			*)
+(*								*)
+(*		 Definition of symbol alphabets			*)
+(*								*)
+(*	     (c) copyright 1987 SoftWare Automata.		*)
+(*								*)
+(*	original module : kjg july 1987				*)
+(*	modifications   : 					*)
+(*								*)
+(****************************************************************)
+
+IMPLEMENTATION MODULE MkAlphabets;
+
+(* this implementation part is empty *)
+
+END MkAlphabets.

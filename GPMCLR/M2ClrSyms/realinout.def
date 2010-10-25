@@ -1,0 +1,34 @@
+(***********************************************************************)
+(*                                                                     *)
+(*            Modula-2 Compiler RealInOut Library Module               *)
+(*                                                                     *)
+(*          High level input and output procedures for                 *)
+(*          REAL numbers. RealInOut will be redirected                 *)
+(*          when InOut is redirected.                                  *)
+(*                                                                     *)
+(*       original module : N. Wirth, PIM-2, 1982                       *)
+(*       modifications   :                                             *)
+(*                         pms 27 Oct 94 Delete reference to WriteOct  *)
+(*                                       Now implemented in Modula2    *)
+(*                         jl  April 96  Now implemented using RealStr *)
+(*                                                                     *)
+(***********************************************************************)
+
+DEFINITION MODULE RealInOut;
+
+   VAR
+      Done : BOOLEAN;
+
+   PROCEDURE ReadReal(VAR x : REAL);
+   (* Precondition  : TRUE
+    * Postcondition : Done = TRUE if and only if the next sequence 
+    *                 of characters represents a REAL value.
+    *)
+
+   PROCEDURE WriteReal(x : REAL; width : CARDINAL);
+   (* Precondition  : x and width are defined.
+    * Postcondition : Outputs a REAL value occupying at least width character
+    *                 positions with leading blanks as required to make width
+    *)
+
+END RealInOut.   

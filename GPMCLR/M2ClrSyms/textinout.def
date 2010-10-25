@@ -1,0 +1,119 @@
+(***********************************************************************)
+(*                                                                     *)
+(*              Modula-2 Compiler TextInOut Library Module             *)
+(*                                                                     *)
+(*          High level input and output procedures for                 *)
+(*          characters, strings, integers and cardinals                *)
+(*                                                                     *)
+(*       THIS MODULE PROVIDES THE SAME PROCEDURES AS InOut	       *)
+(*	 BUT USES NAMED FILES AS SOURCE AND DESTINATION		       *)
+(*								       *)
+(*       original module : N. Wirth, PIM-2,  1982 (InOut)              *)
+(*       modifications   : 					       *)
+(*                                                                     *)
+(***********************************************************************)
+
+FOREIGN DEFINITION MODULE TextInOut; 
+  IMPORT IMPLEMENTATION FROM "M2ClrRts";
+
+  FROM UxFiles IMPORT File;
+
+	CONST 
+           EOL = 12C;        (* End-of-line character *)
+
+        VAR
+           Done : BOOLEAN ;  (* Status of some TextInOut procedure calls.
+                                TRUE if the operation was successful,
+                                FALSE otherwise. *)
+
+           termCh : CHAR ;   (* Terminating character of some input
+                                 procedures. ReadString, ReadInt, ReadCard *)
+
+
+        PROCEDURE Read(inFile : File; VAR c:CHAR);
+        (* Precondition  : TRUE
+           Postcondition : Done = FALSE if and only if the end of the primary
+                           input stream is reached, otherwise c is the next 
+                           character in the stream.  *)
+
+
+        PROCEDURE ReadString(inFile : File; VAR s: ARRAY OF CHAR);
+        (* Precondition  : TRUE
+           Postcondition : Inputs a character string from the primary input
+                           stream until any character less than or equal to 
+                           a blank is read. The variable termCh is set to the
+                           value of this terminating character. 
+                           The NUL character (0C) or the end of the array is
+                           used to mark the end of the string.
+                           Leading blanks and/or tabs are ignored. Excess 
+                           characters beyond the length of s are discarded. *)
+
+
+        PROCEDURE ReadCard(inFile : File; VAR n: CARDINAL);
+        (* Precondition  : TRUE
+           Postcondition : Done = TRUE if and only if the next sequence of 
+                           characters on the input stream represents a
+                           CARDINAL value. The variable termCh is set to the
+                           value of the character that terminates this 
+                           sequence.  *)
+
+ 
+        PROCEDURE ReadInt(inFile : File; VAR i : INTEGER);
+        (* Precondition  : TRUE
+           Postcondition : Done = TRUE if and only if the next sequence of 
+                           characters on the input stream represents a
+                           INTEGER value. The variable termCh is set to the
+                           value of the character that terminates this 
+                           sequence.  *)
+
+  
+        PROCEDURE Write(outFile : File; c:CHAR);
+        (* Precondition  : c is defined.
+           Postcondition : The character representation corresponding to the
+                           value of c is written to the output stream.  *)
+
+
+        PROCEDURE WriteLn(outFile : File); 
+        (* Precondition  : TRUE
+           Postcondition : Equivalent to Write(EOL).  *)
+
+
+        PROCEDURE WriteString(outFile : File; s : ARRAY OF CHAR);
+        (* Precondition  : s is defined.
+           Postcondition : Outputs a string of characters until a NUL character
+                           or the end of the array is encountered.  *)
+
+
+        PROCEDURE WriteCard(outFile : File; n: CARDINAL; w: CARDINAL);
+        (* Precondition  : n and w are defined.
+           Postcondition : The value of n is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The decimal number system is used.  *)
+
+
+        PROCEDURE WriteInt(outFile : File; i: INTEGER; w: CARDINAL);
+        (* Precondition  : i and w are defined.
+           Postcondition : The value of i is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The decimal number system is used and a sign is 
+                           displayed only for negative numbers.  *)
+
+
+        PROCEDURE WriteOct(outFile : File; n: CARDINAL; w: CARDINAL);
+        (* Precondition  : n and w are defined.
+           Postcondition : The value of n is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The octal number system is used.  *)
+
+
+        PROCEDURE WriteHex(outFile : File; n: CARDINAL; w: CARDINAL);
+        (* Precondition  : n and w are defined.
+           Postcondition : The value of n is written to the output stream
+                           occupying at least w character positions. Leading
+                           blanks fill out the space if it is not all required.
+                           The hexadecimal number system is used.  *)
+ 
+END TextInOut.
